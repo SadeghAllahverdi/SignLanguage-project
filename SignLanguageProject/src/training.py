@@ -3,14 +3,16 @@ import torch
 import torch.optim as optim                                                          
 import torch.nn.functional as F
 import seaborn as sns
+from tqdm.auto import tqdm 
+
 import numpy as np                                                                  
 import pandas as pd
 import matplotlib.pyplot as plt 
-from tqdm.auto import tqdm 
 
 from torch import nn
 from torch.utils.data import Dataset
-from torch.utils.data import DataLoader     
+from torch.utils.data import DataLoader 
+from torch.utils.tensorboard import SummaryWriter 
 from typing import Callable, List
 from sklearn.metrics import confusion_matrix
 
@@ -193,3 +195,16 @@ def plot_confusion_matrix(y_trues: List[int],
     
     plt.title(f'Confusion Matrix after {num_epochs} epoches')
     plt.show()
+
+def draw_in_tensorboard(train_losses: List[float],
+                        test_losses: List[float],
+                        train_accuracies: List[float], 
+                        test_accuracies: List[float],  
+                        save_directory: str):
+    
+    with SummaryWriter(log_dir= save_directory) as writer:
+        for epoch , (train_l, test_l, train_a, test_a) in enumerate(zip(train_losses, test_losses, train_accuracies, test_accuracies)):
+            writer.add_scalar('Loss/train', train_l, epoch)
+            writer.add_scalar('Loss/test', test_l, epoch)
+            writer.add_scalar('Accuracy/train', train_a, epoch)
+            writer.add_scalar('Accuracy/test', test_a, epoch)
