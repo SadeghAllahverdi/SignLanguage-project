@@ -18,7 +18,7 @@ from tqdm.auto import tqdm
 
 from sklearn.model_selection import train_test_split                                                
 from collections import defaultdict
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Literal
 from numpy.typing import NDArray
 
 import torch
@@ -33,10 +33,11 @@ from torch.utils.tensorboard import SummaryWriter
 from torchinfo import summary
     
 from sklearn.metrics import confusion_matrix
+from sklearn.utils import resample
 from sklearn.model_selection import KFold
 from captum.attr import LayerConductance
 
-from preprocessing import split_dataset, CustomDataset, convert
+from preprocessing import interpolate_dataset, split_dataset, CustomDataset, convert 
 from training import train, accuracy_fn
 from plotting import draw_in_tensorboard, plot_confusion_matrix, plot_loss_accuracy
 from models import reset_model_parameters
@@ -51,7 +52,8 @@ def train_parameters(detections: NDArray[np.float64],
                      num_epochs: int,
                      model: torch.nn.Module,
                      learning_rate: float,
-                     device: torch.device):
+                     device: torch.device,
+                     dir: Literal['LSA64', 'WLASL100']):
     """
     This function sets different parameters for the training of the model.  
     Args:
@@ -69,8 +71,8 @@ def train_parameters(detections: NDArray[np.float64],
     """
     
     # Define the path where the results are saved
-    save_path =f'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/SignLanguageProject/experiment_results/LSA64/{model.model_type}/runs/'
-
+    save_path =f'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/SignLanguageProject/experiment_results/{dir}/{model.model_type}/runs/'
+    
     # Call the function to split the dataset
     xtrain, xtest, ytrain, ytest= split_dataset(detections, labels, class_names, test_size, random_state)
 
@@ -102,8 +104,43 @@ def train_parameters(detections: NDArray[np.float64],
     plot_confusion_matrix(y_trues, y_preds, class_names, num_epochs)
 
 
+def train_param_decorator(func):
+    def wrapper(detections: NDArray[np.float64], 
+                labels: List[str], 
+                class_names: List[str], 
+                test_size: float, 
+                random_state: int, 
+                batch_size: int, 
+                num_epochs: int,
+                model: torch.nn.Module, 
+                learning_rate: float, 
+                device: torch.device, 
+                dir: Literal['LSA64', 'WLASL100'], 
+                bootstrap_first=False, 
+                interpolate_first=False):
+        """
+        decorator for train_parameters adds bootstrap_first and interpolate_first arguments.
+        bootstrap_first makes sure the dataset is bootstrapped and then interpolated
+        interpolate_first makes sure the dataset is interpolated and then bootstrapped
 
-            
+        n_samples and min_interpolations are chosen so that the dataset has length of 4000 regardless
+        which operation takes place first.
+
+        note: both bootstrap_first and interpolate_first should not be set to True!
+        """
+        
+        if bootstrap_first:
+            detections, labels = resample(detections, labels, n_samples=2700, random_state=random_state)
+            detections, labels = interpolate_dataset(detections, labels, alpha= 0.5, min_interpolations= 13)
+        elif interpolate_first:
+            detections, labels = interpolate_dataset(detections, labels, alpha= 0.5, min_interpolations= 13)
+            detections, labels = resample(detections, labels, n_samples=4000, random_state=random_state)
+        
+        return func(detections, labels, class_names, test_size, random_state, batch_size, num_epochs, model, learning_rate, device, dir)
+    
+    return wrapper
+
+          
 def kfold_cross_validation(detections: NDArray[np.float64], 
                            labels: List[str],
                            class_names: List[str],
@@ -164,3 +201,39 @@ def kfold_cross_validation(detections: NDArray[np.float64],
 
         # Call the function to plot the confusion matrix
         #plotting.plot_confusion_matrix(y_trues, y_preds, class_names, num_epochs)
+
+
+def kfold_decorator(func):
+    def wrapper(detections: NDArray[np.float64], 
+                labels: List[str],
+                class_names: List[str],
+                n_splits: int,
+                batch_size: int,
+                num_epochs: int,
+                model: torch.nn.Module,
+                learning_rate: float,
+                device: torch.device,
+                random_state= 42,
+                bootstrap_first=False, 
+                interpolate_first=False):
+        """
+        decorator for train_parameters adds bootstrap_first, interpolate_first and random_state variables.
+        bootstrap_first makes sure the dataset is bootstrapped and then interpolated
+        interpolate_first makes sure the dataset is interpolated and then bootstrapped
+
+        n_samples and min_interpolations are chosen so that the dataset has length of 4000 regardless
+        which operation takes place first.
+
+        note: both bootstrap_first and interpolate_first should not be set to True!
+        """
+        
+        if bootstrap_first:
+            detections, labels = resample(detections, labels, n_samples=2700, random_state=random_state)
+            detections, labels = interpolate_dataset(detections, labels, alpha= 0.5, min_interpolations= 13)
+        elif interpolate_first:
+            detections, labels = interpolate_dataset(detections, labels, alpha= 0.5, min_interpolations= 13)
+            detections, labels = resample(detections, labels, n_samples=4000, random_state=random_state)
+        
+        return func(detections, labels, class_names, n_splits, batch_size, num_epochs, model, learning_rate, device)
+    
+    return wrapper  
