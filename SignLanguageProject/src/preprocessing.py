@@ -59,7 +59,7 @@ def interpolate_video_detections(vd1: NDArray[np.float64],
             else:
                 #ivd[i][start:end]= (1 - alpha) * fd1part + alpha * fd2part
                 # this formula also works very nice
-                A = fd1part+ ((fd1part + fd2part) / 2)**2 - (fd1part)**2 + ((fd1part + fd2part) / 2)**2 - (fd2part)**2  # Interpolate normally
+                A = fd1part+ ((fd1part + fd2part) / 2)**2 - (fd1part)**2 + ((fd1part + fd2part) / 2)**2 - (fd2part)**2 # Interpolate normally
                 B = fd1part+ ((fd1part + fd2part) / 2)**2 - (fd1part)**2 + ((fd1part + fd2part) / 2)**2 - (fd2part)**2 
                 ivd[i][start:end]= (1 - alpha) * A + alpha * B
     return ivd
@@ -117,62 +117,19 @@ def interpolate_dataset(detections: NDArray[np.float64],
     return np.array(x), y
 
 
-# functions for drawing video landmarks
-def draw_landmarks(frame: np.ndarray,
-                   detection: NDArray[np.float64],
-                   structure: List[int]):
-    """
-    This function traverses in the video array and draws the detections frame by frame.  
-    Args:
-        frame: represents frame that is shown
-        detection: array that represents video frame by frame.
-        structure list of integers where each entary says how many dimention does this landmark has: 
-        
-    Returns:
-        manipulated frame 
 
-    Example usage:
-        frame = draw_landmarks(frame, vid, [4]*33 + [3]*(468 + 21 + 21))
+def convert(detections: NDArray[np.float64],
+            labels: List[str],
+            class_names: List[str]):
     """
-    idx = 0
-    while idx < len(detection):
-        for coordinates in structure:
-            if idx + coordinates > len(detection): # makes sure the index stays in the video
-                break  
-
-            x, y = detection[idx], detection[idx + 1] # get x, y values
-            # multiply x and y to hight and width of the frame
-            px = int(x * frame.shape[1]) 
-            py = int(y * frame.shape[0])
-            cv2.circle(frame, (px, py), 3, (0, 255, 0), -1) # draws the landmark
-            
-            idx += coordinates # base on value of coordinate (either 3 or 4)jumps to next landmark in principle
-            if idx >= len(detection): 
-                break
-    return frame
-
-
-def show_detections(vd: NDArray[np.float64]):
+    changes detection from float 64 to float 32. and maps labels to numbers using a dictionary 
     """
-    This function draws x and y landmarks of a video .  
-    Args:
-        vd: an array that represents video detections 
-    """
-    structure= [4]*33 + [3]*(468 + 21 + 21)  
-    height= 720
-    width= 1280
-    cv2.namedWindow("Landmark Preview", cv2.WINDOW_NORMAL)
-    cv2.resizeWindow("Landmark Preview", width= width, height= height)
-    try:
-        for idx, detection in enumerate(vd):
-            frame = np.zeros((height, width, 3), dtype=np.uint8)
-            frame = draw_landmarks(frame, detection, structure)
-            cv2.imshow("Landmark Preview", frame)
-            if cv2.waitKey(100) & 0xFF == 27:  #ESC key
-                break
-            #print(f"Displaying frame {idx + 1}/{len(vd)}")
-    finally:
-        cv2.destroyAllWindows()
+    label_map= {label: num for num, label in enumerate(class_names)}
+    X= torch.tensor(detections, dtype=torch.float32)
+    y= [label_map[label] for label in labels] 
+    y= torch.tensor(y, dtype=torch.long)    
+    
+    return X, y
 
 
 def split_dataset(detections: NDArray[np.float64],
@@ -195,15 +152,10 @@ def split_dataset(detections: NDArray[np.float64],
     Example usage:
         xtrain, xtest, ytrain, ytest= split_dataset(detections, labels, class_names, 0.2, 42)
     """
-    label_map= {label: num for num, label in enumerate(class_names)}
     
     X_train, X_test, y_train, y_test = train_test_split(detections, labels, test_size=0.2, random_state=42, stratify=labels)
-    X_train, X_test= torch.tensor(X_train, dtype=torch.float32) , torch.tensor(X_test, dtype=torch.float32)
-    
-    y_train= [label_map[label] for label in y_train]
-    y_test= [label_map[label] for label in y_test]
-    y_train= torch.tensor(y_train, dtype=torch.long)
-    y_test= torch.tensor(y_test, dtype=torch.long)
+    X_train, y_train= convert(X_train, y_train, class_names)
+    X_test, y_test= convert(X_test, y_test, class_names)
     
     return X_train, X_test, y_train, y_test
 
