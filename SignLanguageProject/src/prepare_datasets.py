@@ -35,6 +35,15 @@ def get_landmarks_LSA64(root: str,
         labels is a list of labels corresponding to each video detection.
         len(all_video_paths),len(none_cv2_video_paths) are returned to see if cv2 was unable to open some
         video files.
+
+    Note:
+        video_detections has the following structure:
+        indexes (0 to 131) of the list correspond to the first 33 pose landmarks : [x, y, z, visibility]
+        indexes (132 to 1535) of the list correspond to the first 468 face landmarks: [x, y, z]
+        indexes (1536 to 1598) of the list correspond to the first 21 left hand landmarks: [x, y, z]
+        indexes (1599 to 1661) of the list correspond to the first 21 right hand landmarks: [x, y, z]
+
+        in total 1662 coordinate/visibility values OR 543 total landmark objects
         
     """
     all_video_paths= natsorted([str(p) for p in Path(root).glob("**/*.mp4")])      # makes list of video paths in the dataset
@@ -62,7 +71,6 @@ def get_landmarks_LSA64(root: str,
                     lh= np.array([[res.x, res.y, res.z] for res in result.left_hand_landmarks.landmark]).flatten() if result.left_hand_landmarks else np.zeros(21*3)
                     rh= np.array([[res.x, res.y, res.z] for res in result.right_hand_landmarks.landmark]).flatten() if result.right_hand_landmarks else np.zeros(21*3)
                     detection= np.concatenate((pose,face,lh, rh))
-                    label= vid_idx_to_class_name[int(os.path.basename(video_path).split('_')[0])]
                     video_detections.append(detection)
 
                 
@@ -104,10 +112,19 @@ def get_landmarks_WLASL100(root: str,
         labels is a list of labels corresponding to each video detection.
         len(all_video_paths),len(none_cv2_video_paths) are returned to see if cv2 was unable to open some
         video files.
-        Example usage:
-            results= get_landmarks_LSA64(root= 'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/lsa64_raw/all',
-                                         class_names= class_names,
-                                         frame_numbers= 60): 
+    Example usage:
+        results= get_landmarks_LSA64(root= 'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/lsa64_raw/all',
+                                     class_names= class_names,
+                                     frame_numbers= 60):
+
+    Note:
+        video_detections has the following structure:
+        indexes (0 to 131) of the list correspond to the first 33 pose landmarks : [x, y, z, visibility]
+        indexes (132 to 1535) of the list correspond to the first 468 face landmarks: [x, y, z]
+        indexes (1536 to 1598) of the list correspond to the first 21 left hand landmarks: [x, y, z]
+        indexes (1599 to 1661) of the list correspond to the first 21 right hand landmarks: [x, y, z]
+
+        in total 1662 coordinate/visibility values OR 543 total landmark objects
     """
     all_video_paths= natsorted([str(p) for p in Path(root).glob("**/*.mp4")])
     vid_idx_to_class_name= {i+1:label for i, label in enumerate(class_names)}
