@@ -39,7 +39,10 @@ def interpolate_video_detections(vd1: NDArray[np.float64],
         or: most_recent_detection
 
     Example usage: 
-        
+        ivd = interpolate_video_detections(video1= v1,
+                                           video2= v2,
+                                           shapes= [(0, 132), (132, 1536), (1536, 1599), (1599, 1662)]
+                                           alpha= 0.5)
     """
     num_frames = vd1.shape[0]
     ivd= np.zeros_like(vd1)
@@ -59,7 +62,7 @@ def interpolate_video_detections(vd1: NDArray[np.float64],
             else:
                 #ivd[i][start:end]= (1 - alpha) * fd1part + alpha * fd2part
                 # this formula also works very nice
-                A = fd1part+ ((fd1part + fd2part) / 2)**2 - (fd1part)**2 + ((fd1part + fd2part) / 2)**2 - (fd2part)**2 # Interpolate normally
+                A = fd1part+ ((fd1part + fd2part) / 2)**2 - (fd1part)**2 + ((fd1part + fd2part) / 2)**2 - (fd2part)**2 
                 B = fd1part+ ((fd1part + fd2part) / 2)**2 - (fd1part)**2 + ((fd1part + fd2part) / 2)**2 - (fd2part)**2 
                 ivd[i][start:end]= (1 - alpha) * A + alpha * B
     return ivd
@@ -82,7 +85,7 @@ def interpolate_dataset(detections: NDArray[np.float64],
         y is the corresponding label for each video detection in the landmark dataset array
 
     Example usage:
-        ivd = interpolate_video_detections(vid1, vid2, [(0, 132), (132, 1536), (1536, 1599), (1599, 1662)],0.5, 5) 
+        detections, labels = interpolate_dataset(detections, labels, alpha= 0.5, min_interpolations= 13)
     """
     data= defaultdict(list)                         # stores current data
     interpolated_data= defaultdict(list)            # stores interpolated data
@@ -122,7 +125,16 @@ def convert(detections: NDArray[np.float64],
             labels: List[str],
             class_names: List[str]):
     """
-    changes detection from float 64 to float 32. and maps labels to numbers using a dictionary 
+    changes detection from float 64 to float 32. and maps labels to numbers using a dictionary
+    Args:
+        detections: mediapipe detections
+        label: labels corresponding to the detections
+        class_names: list of all class names withing the dataset
+    Returns:
+        a tuple of (X, y) where X has type tensor float 32 and y has type long.
+
+    Example use:
+        X, y= convert(detections, labels, class_names)
     """
     label_map= {label: num for num, label in enumerate(class_names)}
     X= torch.tensor(detections, dtype=torch.float32)
@@ -138,7 +150,8 @@ def split_dataset(detections: NDArray[np.float64],
                   test_size: float,
                   random_state: int):
     """
-    splits the dataset and maps each video label to a corresponding number that is suitable for training process.  
+    Splits the dataset and maps each video label to a corresponding number that is suitable for training process
+    (ex: it maps the label "Red" to number 1)
     Args:
         detections: mediapipe detections for entire dataset.
         labels: list of all video labels for the entire dataset.
@@ -162,6 +175,9 @@ def split_dataset(detections: NDArray[np.float64],
 
 # dataset class
 class CustomDataset(Dataset):
+    """
+    A data set class that can also be customized currently has the same functionality as Dataset object
+    """
     def __init__(self,features, labels):
         self.features = features
         self.labels = labels

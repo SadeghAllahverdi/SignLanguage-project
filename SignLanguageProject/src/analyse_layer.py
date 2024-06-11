@@ -1,8 +1,15 @@
 
+# This file containes all functions necessary to calculate and analyse layer attributions. The file contians multiple functions for getting
+# mediapipe landmarks, drawing , calculation etc. Although the functions are very different in principle and one might argue it is better to
+# distribute between other .py files. I have decided to put them all here because they are all used to gether.
+
 import os
 import cv2
+import torch
+from torch import Tensor
 import mediapipe as mp
 import numpy as np
+import matplotlib.pyplot as plt
 
 mp_holistic= mp.solutions.holistic
 mp_drawing= mp.solutions.drawing_utils
@@ -26,6 +33,7 @@ def get_landmarks(video_path: str,
 
     Note:
         video_detections has the following structure:
+        
         indexes (0 to 131) of the list correspond to the first 33 pose landmarks : [x, y, z, visibility]
         indexes (132 to 1535) of the list correspond to the first 468 face landmarks: [x, y, z]
         indexes (1536 to 1598) of the list correspond to the first 21 left hand landmarks: [x, y, z]
@@ -83,8 +91,89 @@ def get_landmarks(video_path: str,
         return results, pixel_coor, video_detections, label
 
 
+def calculate_means(attributions: Tensor):
+    """
+    Calculates the mean Layer attribution of a landmark. each landmark has x, y, z (and in case of pose_landmarks visibility) values
+    each landmark value has an attribution that can effect the transformer layer. mean acts as a parameter that shows how much a 
+    landmark is effecting the output of the model.
+    Args:
+        attributions: a tensor of shape(1, frame_number, 1662)
+    Returns:
+        means: a tensor of shape (1, frame_number, 543)
+    """
+    # calculate mean for first 132 pose landmark, pose landmark structure is (x, y, z, visibility)
+    first_part = attributions[:, :, :132]                            
+    first_part_reshaped = first_part.reshape(attributions.shape[0], attributions.shape[1], -1, 4)
+    first_part_means = first_part_reshaped.mean(dim=3)
 
-def draw_landmarks(frame, result):
+    # calculate mean for the rest of landmarks (face, left_hand, right_hand), their structure is (x, y, z)
+    second_part = attributions[:, :, 132:]
+    second_part_reshaped = second_part.reshape(attributions.shape[0], attributions.shape[1], -1, 3)
+    second_part_means = second_part_reshaped.mean(dim=3)
+    
+    # Concatenate first and second part
+    means = torch.cat((first_part_means, second_part_means), dim=2)
+    
+    return means
+
+
+def make_idx_tr_pairs(indices: Tensor, 
+                      means: Tensor):
+    """
+    Args:
+        indices: a tensor that contains indices of most to least significant landmarks for each frame
+        means: output of the above function it is basically used as a transparency score from 0 to 10
+
+    Returns:
+        idx_tr: an ordered list containing indices of most to least significant landmarks for each frame along with their transparency score
+
+    Note:
+        the reason idx_tr is an ordered list is so that we can draw landmarks from least to most important. this is usefull
+        when for example a left hand landmark that is important hovers over a face landmrk. in this case it is drawn on top of 
+        the less imoprtant landmark.
+    """
+    #prepare transparency_level
+    transparency_level= means/ torch.max(abs(means))
+    transparency_level= transparency_level * 10
+    
+    
+    list_1= indices.tolist()
+    list_2= transparency_level.int().tolist()
+    
+    idx_trs = []
+    for f in range(len(list_1[0])):  
+        frame = []
+        for i in range(len(list_1[0][f])):
+            index = list_1[0][f][i]  
+            value = list_2[0][f][index]  
+            frame.append((index, value))  
+        idx_trs.append(frame)  
+
+    return idx_trs
+
+
+def plot_atts_heatmap(attributions: Tensor, title="Attributions"):
+    """
+    This function plots attribution as a heatmap where x axis are attributes and y axis are frames
+    """
+    attributions = attributions.detach().cpu().numpy()  # Move tensor to CPU before converting to NumPy
+    batch_size, seq_len, num_features = attributions.shape
+    
+    for i in range(batch_size):
+        plt.figure(figsize=(12, 6))
+        plt.imshow(attributions[i].T, cmap='viridis', aspect='auto', origin='lower')
+        plt.colorbar()
+        plt.title(f"{title} - Sample {i}")
+        plt.xlabel("Sequence Length")
+        plt.ylabel("Features")
+        plt.xticks(range(0, seq_len, 1))  # Set ticks every 5 units
+        plt.xlim(0, seq_len - 1)  # Set x-axis limits
+        plt.yticks(range(0, num_features, 100))  # Set ticks every 10 units
+        plt.ylim(0, num_features - 1)  # Set y-axis limits
+        plt.show()
+
+
+def plot_mp_landmarks(frame, result):
     """
     This function draws landmarks and connections on a given frame.
     Args:
@@ -93,71 +182,50 @@ def draw_landmarks(frame, result):
         
     """
     mp_drawing.draw_landmarks(frame, result.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
-                              mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
-                              mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
     mp_drawing.draw_landmarks(frame, result.face_landmarks, mp_holistic.FACEMESH_CONTOURS,
-                              mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
-                              mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
     mp_drawing.draw_landmarks(frame, result.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                              mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
-                              mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
     mp_drawing.draw_landmarks(frame, result.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                              mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
-                              mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
+                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
 
 
 
-def draw_circle(frame, coor, landmark_att):
+def plot_circle(frame, coor, idx_tr):
     """
     This function visualizes layer attributions in a frame.
     Args:
         frame: video frame that we want to draw on.
-        coor: set of all (x, y) coordinates of the landmarks detected in the frame
-        layer_att: this list contains indexes of most important landmarks, it can be any number from 0 to 542.
-        ! for more information about landmark indexes take a look at get_landmarks and draw_layer_attr functions.
+        coor: list of all (x, y) coordinates of the landmarks detected in the frame
+        idx_tr: contain indexes of landmarks and their transparency score. the indexes correspond to the 
+        coordinates of the landmarks in coor list.
+    Note:
+        for more information about landmark indexes take a look at get_landmarks and draw_layer_attr functions.
         
     """
-    colors = [(0, 100, 0),         # Dark Green
-              (34, 139, 34),       # Forest Green
-              (50, 205, 50),       # Lime Green
-              (0, 250, 154),       # Medium Spring Green
-              (144, 238, 144)]     # Light Green
-    
-    # here we sure that the most important landmark is drawn last.
-    # this will help if an important landmark and a less important landmark overlap
-    # ex: if the Signer puts his/her hand on theri face.
-    for i, idx in enumerate(reversed(landmark_att)):
+    for idx, tr in reversed(idx_tr[:75]):
+        intensity = int(min(255, max(0, 255 * abs(tr) / 10)))
 
-        # i is used to determine the shade the more important the brighter
-        shade_index = min(i // 20, len(colors) - 1)
-        color = colors[shade_index]
-        
-        cv2.circle(frame, (coor[idx][0], coor[idx][1]), 5, color, -1)
+        color = (intensity, 255, 0)  
+
+        cv2.circle(frame, (coor[idx][0], coor[idx][1]), radius=5, color=color, thickness=-1)
 
 
-
-def draw_layer_attr(video_path, results, pixel_coor, landmark_atts, frame_numbers = 30, wait= 200):
+def draw_layer_attr(video_path, results, pixel_coor, idx_trs, frame_numbers = 30, wait= 200):
     """
     This function visualizes layer attributions in the video.
     Args:
         video_path: path to the video.
         results: set of all (x, y) coordinates of the landmarks detected in the frame
         pixel_coor: this list contains indexes of most important landmarks, it can be any number from 0 to 542.
-        landmark_atts: a list of landmark indexes where index can be any number from 0 to 542 
-        the position of the landmark index in the list determines its importance 
-            ex:
-            in this frame the landmark 17 has the most attribut
-            [17, 22, 11, 19, 444, 242, 22, 111, ... , 44]
-            .
-            .
-            .
-            [511, 515, 500, 19, 444, 242, 22, 111, ... , 222]
-            in this frame above, landmark 222 has the least attribut
-        frame_numbers: number of frames in the video that were used as input for media pipe
-        ! for more information about landmark indexes take a look at get_landmarks function.
+        idx_trs: an ordered list of tuples containing the index landmarks and their transparency
         
     """
-    
     #'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/lsa64_raw/all/001_001_001.mp4'
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -166,15 +234,19 @@ def draw_layer_attr(video_path, results, pixel_coor, landmark_atts, frame_number
         total_frames_number = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         frame_idxs_to_process = np.linspace(0, total_frames_number - 1, frame_numbers, dtype=int)
         
-        for frame_idx, result, coor, landmark_att in zip(frame_idxs_to_process ,results , pixel_coor, landmark_atts):
+        for frame_idx, result, coor, idx_tr in zip(frame_idxs_to_process ,results , pixel_coor, idx_trs):
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
             ret, frame = cap.read()
             if not ret:
                 break
-            draw_landmarks(frame, result)
-            draw_circle(frame, coor, landmark_att)
-            # Display the frame
-            cv2.imshow("Video", frame)
+            plot_mp_landmarks(frame, result)
+            plot_circle(frame, coor, idx_tr)
+
+            width = int(frame.shape[1] * 0.60)
+            height = int(frame.shape[0] * 0.60)
+            resized_frame = cv2.resize(frame, (width, height))
+
+            cv2.imshow("Video", resized_frame)
         
             # Set wait time to 33 milliseconds for approx. 30 fps
             if cv2.waitKey(wait) & 0xFF == 27:  # Exit on ESC key

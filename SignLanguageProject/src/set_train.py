@@ -119,14 +119,15 @@ def train_param_decorator(func):
                 bootstrap_first=False, 
                 interpolate_first=False):
         """
-        decorator for train_parameters adds bootstrap_first and interpolate_first arguments.
+        Decorator for train_parameters adds bootstrap_first and interpolate_first arguments.
         bootstrap_first makes sure the dataset is bootstrapped and then interpolated
         interpolate_first makes sure the dataset is interpolated and then bootstrapped
 
         n_samples and min_interpolations are chosen so that the dataset has length of 4000 regardless
         which operation takes place first.
 
-        note: both bootstrap_first and interpolate_first should not be set to True!
+        Note: 
+            both bootstrap_first and interpolate_first should not be set to True!
         """
         
         if bootstrap_first:
@@ -224,7 +225,8 @@ def kfold_decorator(func):
         n_samples and min_interpolations are chosen so that the dataset has length of 4000 regardless
         which operation takes place first.
 
-        note: both bootstrap_first and interpolate_first should not be set to True!
+        Note: 
+            both bootstrap_first and interpolate_first should not be set to True!
         """
         
         if bootstrap_first:

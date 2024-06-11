@@ -66,7 +66,9 @@ def draw_landmarks(frame: np.ndarray,
 
 def show_detections(vd: NDArray[np.float64]):
     """
-    This function draws x and y landmarks of a video .  
+    This function draws Mediapipe landmarks of that were detected from a video using a numpy array 
+    that represents landmark.x, landmark.y, landmark.z(and in case of pose landmarks landmark.visibility)values.
+    here we only focus on the (x,y) coordinates we do not draw in 3D  (no landmark.z or landmark.visibility)
     Args:
         vd: an array that represents video detections 
     """
@@ -135,7 +137,7 @@ def plot_confusion_matrix(y_trues: List[int],
                           class_names: List[str],
                           num_epochs: int):
     """
-    Trains a model on the given train and test data sets.
+    Plots confusion matrix of a model using true values and model predictions.
     Args:
         y_trues: true values
         y_preds: model predictions
@@ -161,6 +163,18 @@ def draw_in_tensorboard(train_losses: List[float],
                         train_accuracies: List[float], 
                         test_accuracies: List[float],  
                         save_directory: str):
+    
+    """
+    Plots loss and accuracy of the training process in tensor board.
+    Args:
+        train_losses: train loss values for all epochs
+        test_losses: test loss values for all epochs
+        train_accuracies: train accuracy values for all epochs
+        test_accuracies: test accuracy values for all epochs
+        save_directory: the directory in which the files need to be saved
+    Example usage:
+        draw_in_tensorboard(train_losses, test_losses, train_accuracies, test_accuracies, save_path)
+    """
     
     with SummaryWriter(log_dir= save_directory) as writer:
         for epoch , (train_l, test_l, train_a, test_a) in enumerate(zip(train_losses, test_losses, train_accuracies, test_accuracies)):

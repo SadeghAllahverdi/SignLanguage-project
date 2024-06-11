@@ -188,7 +188,7 @@ class LstmModel(nn.Module):
 
 def reset_model_parameters(model):
     """
-    Resets the model parameters
+    Resets the model parameters this is useful especially when performing Kfold cross validation
     """
     for name, module in model.named_children():
         if hasattr(module, 'reset_parameters'):

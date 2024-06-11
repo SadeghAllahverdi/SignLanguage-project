@@ -44,7 +44,8 @@ def get_landmarks_LSA64(root: str,
         indexes (1599 to 1661) of the list correspond to the first 21 right hand landmarks: [x, y, z]
 
         in total 1662 coordinate/visibility values OR 543 total landmark objects
-        
+    Example use:
+        results= get_landmarks_LSA64(root, lsa64class_names, 30)
     """
     all_video_paths= natsorted([str(p) for p in Path(root).glob("**/*.mp4")])      # makes list of video paths in the dataset
     vid_idx_to_class_name= {i+1:label for i, label in enumerate(class_names)}      # this is used to change the video numbers to the class name since videos are encoded in a specific way
@@ -87,7 +88,7 @@ def get_landmarks_LSA64(root: str,
 def process_frame(cap, index):
     """
     Positions the cv2 on a specific frame number, reads the frame and returns the results.
-    Example usage:
+    Example use:
         ret, frame= process_frame(cap, idx)
     """
     cap.set(cv2.CAP_PROP_POS_FRAMES, index)
@@ -112,10 +113,6 @@ def get_landmarks_WLASL100(root: str,
         labels is a list of labels corresponding to each video detection.
         len(all_video_paths),len(none_cv2_video_paths) are returned to see if cv2 was unable to open some
         video files.
-    Example usage:
-        results= get_landmarks_LSA64(root= 'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/lsa64_raw/all',
-                                     class_names= class_names,
-                                     frame_numbers= 60):
 
     Note:
         video_detections has the following structure:
@@ -125,6 +122,11 @@ def get_landmarks_WLASL100(root: str,
         indexes (1599 to 1661) of the list correspond to the first 21 right hand landmarks: [x, y, z]
 
         in total 1662 coordinate/visibility values OR 543 total landmark objects
+
+    Example use:
+        results= get_landmarks_WLASL100(root= root, 
+                                        class_names= class_names,
+                                        frame_numbers= 60):
     """
     all_video_paths= natsorted([str(p) for p in Path(root).glob("**/*.mp4")])
     vid_idx_to_class_name= {i+1:label for i, label in enumerate(class_names)}
@@ -197,7 +199,7 @@ def interpolate_frames(most_recent_detection, next_coming_detection, alpha):
         or: next_coming_detection
         or: most_recent_detection
 
-    Example usage:
+    Example use:
         video_detection[i]= interpolate_frames(most_recent_detection, next_coming_detection, 0.5)
     """
     if most_recent_detection is None and next_coming_detection is not None:             # first to nth frames are all corrupt
@@ -217,7 +219,7 @@ def fill_empty_detections(result):
     Returns:
         detections (with no empty landmark frame)
 
-    Example usage: detections= fill_empty_detections(detections)
+    Example use: detections= fill_empty_detections(detections)
     """
     detections= result
     for video_detection in detections:
