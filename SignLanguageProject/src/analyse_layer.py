@@ -4,6 +4,9 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
+mp_holistic= mp.solutions.holistic
+mp_drawing= mp.solutions.drawing_utils
+
 def get_landmarks(video_path: str,
                   frame_numbers: int = 30):
 
@@ -71,7 +74,7 @@ def get_landmarks(video_path: str,
                 c= c1+c2+c3+c4
 
                 # 3. create list of (px,py) coordinates for video
-                coordinates.append(c)
+                pixel_coor.append(c)
                     
             label= int(os.path.basename(video_path).split('_')[0]) - 1
     
@@ -89,16 +92,16 @@ def draw_landmarks(frame, result):
         result: the detected media pipe object corresponding to the frame.
         
     """
-    mp_drawing.draw_landmarks(image, result.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
+    mp_drawing.draw_landmarks(frame, result.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
                               mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
                               mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
-    mp_drawing.draw_landmarks(image, result.face_landmarks, mp_holistic.FACEMESH_CONTOURS,
+    mp_drawing.draw_landmarks(frame, result.face_landmarks, mp_holistic.FACEMESH_CONTOURS,
                               mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
                               mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
-    mp_drawing.draw_landmarks(image, result.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
+    mp_drawing.draw_landmarks(frame, result.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
                               mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
                               mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
-    mp_drawing.draw_landmarks(image, result.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
+    mp_drawing.draw_landmarks(frame, result.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
                               mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 1),
                               mp_drawing.DrawingSpec(color= (254, 254, 0), thickness= 1, circle_radius= 1))
 
@@ -126,14 +129,14 @@ def draw_circle(frame, coor, landmark_att):
     for i, idx in enumerate(reversed(landmark_att)):
 
         # i is used to determine the shade the more important the brighter
-        shade_index = min(i // 20, len(shades_of_green) - 1)
+        shade_index = min(i // 20, len(colors) - 1)
         color = colors[shade_index]
         
-        cv2.circle(image, (coor[a][0], coor[a][1]), 3, color, -1)
+        cv2.circle(frame, (coor[idx][0], coor[idx][1]), 5, color, -1)
 
 
 
-def draw_layer_attr(video_path, results, pixel_coor, landmark_atts, frame_numbers = 30):
+def draw_layer_attr(video_path, results, pixel_coor, landmark_atts, frame_numbers = 30, wait= 200):
     """
     This function visualizes layer attributions in the video.
     Args:
@@ -163,18 +166,18 @@ def draw_layer_attr(video_path, results, pixel_coor, landmark_atts, frame_number
         total_frames_number = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         frame_idxs_to_process = np.linspace(0, total_frames_number - 1, frame_numbers, dtype=int)
         
-        for frame_idx, result, coor, landmark_att in zip(frame_idxs_to_process ,results , np.array(pixel_coor), landmark_atts):
+        for frame_idx, result, coor, landmark_att in zip(frame_idxs_to_process ,results , pixel_coor, landmark_atts):
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
             ret, frame = cap.read()
             if not ret:
                 break
-            draw_landmarks(image, result)
+            draw_landmarks(frame, result)
             draw_circle(frame, coor, landmark_att)
             # Display the frame
-            cv2.imshow("Video", image)
+            cv2.imshow("Video", frame)
         
             # Set wait time to 33 milliseconds for approx. 30 fps
-            if cv2.waitKey(100) & 0xFF == 27:  # Exit on ESC key
+            if cv2.waitKey(wait) & 0xFF == 27:  # Exit on ESC key
                 break
         
         cap.release()
