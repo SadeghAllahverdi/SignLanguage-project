@@ -1,2 +1,2 @@
 # SignLanguage-project
-In this repository i will share my codes so my supervisor has an idea of what i do during the week
+In this repository, the codes for my Isolated Sign Language detection project are shared and updated weekly. the dataset that is obtained using mediapipe can be downloaded from the link below
