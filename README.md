@@ -1,10 +1,14 @@
 # SignLanguage-project
 In this repository, the codes for my Isolated Sign Language detection project are shared and updated weekly. the dataset that is obtained using mediapipe can be downloaded from the link below
-# Date set
+# Datesets
 please download the datasets from the links below:
+
 LSA64 dataset has 4 versions in 30, 40, 50 and 60 fps along with their labels
+
 [Download Mediapipe landmarks and labels for LSA64]
 (https://drive.google.com/drive/folders/1AjV780y033Cy9k9PV9Y2RBOndS1sG4Fd?usp=drive_link)
+
 WLASL100 dataset is only provided in 25 fps
+
 [Download Mediapipe landmarks and labels for WLASL100]
 (https://drive.google.com/drive/folders/1vupDY3DaFvmBdt_beXWIMqShPkHrcVeU?usp=drive_link)
