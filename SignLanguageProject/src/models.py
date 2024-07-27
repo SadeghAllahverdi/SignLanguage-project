@@ -2,6 +2,7 @@
 
 import torch
 from torch import nn
+import math
 from typing import List, Callable
 
 # Transformer classes
@@ -193,3 +194,54 @@ def reset_model_parameters(model):
     for name, module in model.named_children():
         if hasattr(module, 'reset_parameters'):
             module.reset_parameters()
+
+
+############################################## Here IS A new model that I am working on################################################################
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=60):
+        super(PositionalEncoding, self).__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        x = x + self.pe[:, :x.size(1), :]
+        return x
+
+class PETransformer(nn.Module):
+    def __init__(self,
+                 class_names: List[str],
+                 seq_len: int= 40, 
+                 d_model: int= 1662,
+                 nhead: int= 6,
+                 d_ff: int=2048,
+                 num_layers: int= 2):
+
+        super().__init__()
+        self.model_type = 'PEtransformer'
+        self.class_names= class_names
+        self.positional_encoding = PositionalEncoding(d_model, max_len=seq_len)
+        self.encoder_layer = nn.TransformerEncoderLayer(d_model= d_model, nhead= nhead, dim_feedforward= d_ff, batch_first= True)
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer= self.encoder_layer, num_layers= num_layers)
+        self.classifier = nn.Linear(in_features= d_model, out_features= len(self.class_names))
+
+
+    def forward(self, src: torch.Tensor):
+        """
+        Transformer model with non learnable positional encoding (only encoder)
+        Args:
+            src: Tensor of shape ``[batch_size, seq_len, input_shape]``
+        Returns:
+            output: Tensor of shape ``[batch_size, len(class_names)]``
+        """
+        output = self.positional_encoding(src)
+        output = self.transformer_encoder(output)
+        output = torch.mean(output, dim=1)        
+        output = self.classifier(output)
+
+        return output
