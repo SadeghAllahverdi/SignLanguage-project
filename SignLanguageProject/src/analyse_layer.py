@@ -1,178 +1,221 @@
-
-# This file containes all functions necessary to calculate and analyse layer attributions. The file contians multiple functions for getting
-# mediapipe landmarks, drawing , calculation etc. Although the functions are very different in principle and one might argue it is better to
-# distribute between other .py files. I have decided to put them all here because they are all used to gether.
+# Explanation: this python file contains functions for analysing layer attentions and drawing sailency maps.
+#------------------------------------------------------------------------Import--------------------------------------------------------------------------------
+import captum
+from captum.attr import Attribution
+from captum.attr import Saliency
+from captum.attr import IntegratedGradients
+from captum.attr import LayerConductance
 
 import os
 import cv2
 import torch
+from tqdm.auto import tqdm 
 from torch import Tensor
 import mediapipe as mp
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import List
+from prepare_datasets import get_frame_detections, get_frame_coordinates, autslclass_names, lsa64class_names
+from preprocess_utils import convert
 
-mp_holistic= mp.solutions.holistic
-mp_drawing= mp.solutions.drawing_utils
+#------------------------------------------------------------------------Constants-----------------------------------------------------------------------------
+# these parameters most only be used when the 468 extra face landmarks are not included !!!!
+pose_idx, lh_idx, rh_idx= list(range(0,33)), list(range(33, 54)), list(range(54, 75))    # indexes in pose, lh, rh
+pose_l_idx, pose_r_idx= [11, 13, 15, 17, 19, 21], [12, 14, 16, 18, 20, 22]               # indexes corresponding to right arm body and left arm 
+pose_m_idx= [idx for idx in pose_idx if idx not in pose_r_idx and idx not in pose_l_idx] # rest of the indexes: legs, hips, etc
+reordered_idxs= pose_m_idx + pose_l_idx + lh_idx + pose_r_idx + rh_idx                   # so left arm lh and right arm rh are next to each other
 
-def get_landmarks(video_path: str,
-                  frame_numbers: int = 30):
+reordered_landmarks= ["Nose", "Left Eye Inner", "Left Eye", "Left Eye Outer", "Right Eye Inner", "Right Eye", "Right Eye Outer", "Left Ear", "Right Ear",
+                      "Left Mouth Corner", "Right Mouth Corner", "Left Hip", "Right Hip", "Left Knee", "Right Knee", "Left Ankle", "Right Ankle", "Left Heel",
+                      "Right Heel", "Left Foot Index", "Right Foot Index", "Left Shoulder", "Left Elbow", "Left Wrist", "Left Pinky", "Left Index", 
+                      "Left Thumb", "Left Wrist", "Left Thumb CMC", "Left Thumb MCP", "Left Thumb IP", "Left Thumb Tip", "Left Index MCP", "Left Index PIP",
+                      "Left Index DIP", "Left Index Tip", "Left Middle MCP",  "Left Middle PIP", "Left Middle DIP", "Left Middle Tip", "Left Ring MCP",
+                      "Left Ring PIP", "Left Ring DIP", "Left Ring Tip", "Left Pinky MCP", "Left Pinky PIP", "Left Pinky DIP", "Left Pinky Tip", 
+                      "Right Shoulder", "Right Elbow", "Right Wrist", "Right Pinky", "Right Index", "Right Thumb", "Right Wrist", "Right Thumb CMC", 
+                      "Right Thumb MCP", "Right Thumb IP", "Right Thumb Tip", "Right Index MCP", "Right Index PIP", "Right Index DIP", "Right Index Tip",
+                      "Right Middle MCP", "Right Middle PIP", "Right Middle DIP", "Right Middle Tip",  "Right Ring MCP", "Right Ring PIP", "Right Ring DIP",
+                      "Right Ring Tip", "Right Pinky MCP", "Right Pinky PIP", "Right Pinky DIP", "Right Pinky Tip"]
 
+mp_holistic= mp.solutions.holistic         # mediapipe holistic model
+mp_drawing= mp.solutions.drawing_utils     # pre-made class that has functions for drawing media pipe result object
+
+#--------------------------------------------------------------plotting data on video sample-------------------------------------------------------------------
+def plot_attributions_on_video(video_path: str,
+                               model: torch.nn.Module,
+                               captum_method: Attribution,
+                               class_names: List[str],
+                               device: torch.device,
+                               frame_numbers: int = 30):
     """
-    This function creates a list of landmarks, list of pixel coordinates(x,y) and a list mediapipe output objects (here called results)
-    for a video path by applying mediapipe model frame by frame.
+    This function plots the attribution values for a given video (from LSA64 and AUTSL) 
     Args:
-        video_path: Path to video.
+        video_path: Path to the video sample.
+        captum_method: ex:  Saliency
+        class_names: List of all words in the dataset from which we took that video.
         frame_numbers: number of frames we want to take from the entire video.
-        
-    Returns:
-        A tuple of (results, pixel_coor, video_detections, label) Where :
-        results is a list of mediapipe objects that is later used to visualize landmarks.
-        pixel_coor is a list of (px, py) coordinates, this is later used to draw circles on specific landmarks.
-        video_detections is an array of flattened mediapipe detections obtained from the video
-        label is the video label as an index number (range 0 to 63)
-
-    Note:
-        video_detections has the following structure:
-        
-        indexes (0 to 131) of the list correspond to the first 33 pose landmarks : [x, y, z, visibility]
-        indexes (132 to 1535) of the list correspond to the first 468 face landmarks: [x, y, z]
-        indexes (1536 to 1598) of the list correspond to the first 21 left hand landmarks: [x, y, z]
-        indexes (1599 to 1661) of the list correspond to the first 21 right hand landmarks: [x, y, z]
-
-        in total 1662 coordinate/visibility values OR 543 total landmark objects
+    Example usage:
+        result_objs, coordiantes, video_detection, label= get_landmarks_from_vid(video_path, class_name, 30) 
     """
-    
-    #'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/lsa64_raw/all/001_001_001.mp4'
-    with mp.solutions.holistic.Holistic(min_detection_confidence= 0.5, min_tracking_confidence=0.5) as holistic:
-        cap = cv2.VideoCapture(video_path)
+    vid_idx_to_label= {i:label for i, label in enumerate(class_names)}          # this mapping is used to change the video titles to labels
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"ERROR in opening the video path{video_path}")
+        return
         
-        if not cap.isOpened():
-            print(f"ERROR in opening the video path{video_path}")    
-        else:
-            total_frames_number = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))                               
-            frame_idxs_to_process = np.linspace(0, total_frames_number-1, frame_numbers, dtype=int)  
-            results= []
-            pixel_coor = []
-            video_detections= []
+    with mp.solutions.holistic.Holistic(min_detection_confidence= 0.5, min_tracking_confidence=0.5) as holistic:
+        try:
+            frames= []
+            result_objs= []        # stores mediapipe result objects from each frame of the video
+            video_detection= []    # stores the detections from each frame of the video
+            video_coordinates= []  # stores the coordinates of the detected landmarks
+            
+            total_frames_number = cap.get(cv2.CAP_PROP_FRAME_COUNT)                                 
+            total_frames_number= int(total_frames_number)
+            frame_idxs_to_process = np.linspace(0, total_frames_number-1, frame_numbers, dtype=int) # desired frame indexes
             
             for idx in frame_idxs_to_process:
-                cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
-                ret, frame= cap.read()
+                cap.set(cv2.CAP_PROP_POS_FRAMES, idx)       # set cv2 to the desired index
+                ret, frame= cap.read()                      # process the frame in that index
                 if not ret:
-                    break       
-                result= holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                # 1. add result obj to results list
-                results.append(result)
-                
-                # convert result obj landmark values to np.array for each frame
-                pose= np.array([[res.x, res.y, res.z, res.visibility] for res in result.pose_landmarks.landmark]).flatten() if result.pose_landmarks else np.zeros(33*4) 
-                face= np.array([[res.x, res.y, res.z] for res in result.face_landmarks.landmark]).flatten() if result.face_landmarks else np.zeros(468*3) 
-                lh= np.array([[res.x, res.y, res.z] for res in result.left_hand_landmarks.landmark]).flatten() if result.left_hand_landmarks else np.zeros(21*3)
-                rh= np.array([[res.x, res.y, res.z] for res in result.right_hand_landmarks.landmark]).flatten() if result.right_hand_landmarks else np.zeros(21*3)
-                detection= np.concatenate((pose,face,lh, rh))
-                
-                # 2. add landmark values from each frame to video_detection list
-                video_detections.append(detection)
-                
-                # convert result obj landmark values pixel_coordinates list for each frame
-                c1= [(int(res.x * frame.shape[1]), int(res.y * frame.shape[0])) for res in result.pose_landmarks.landmark] if result.pose_landmarks else [(0, 0)] * 33 
-                c2= [(int(res.x * frame.shape[1]), int(res.y * frame.shape[0])) for res in result.face_landmarks.landmark] if result.face_landmarks else [(0, 0)] * 468 
-                c3= [(int(res.x * frame.shape[1]), int(res.y * frame.shape[0])) for res in result.left_hand_landmarks.landmark] if result.left_hand_landmarks else [(0, 0)] * 21
-                c4= [(int(res.x * frame.shape[1]), int(res.y * frame.shape[0])) for res in result.right_hand_landmarks.landmark] if result.right_hand_landmarks else [(0, 0)] * 21
-                c= c1+c2+c3+c4
+                    print("unreadble frame detected")       # incase there is any unreadable frame
+                    break   
 
-                # 3. create list of (px,py) coordinates for video
-                pixel_coor.append(c)
+                result= holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))  # processing frame with Mediapipe
+                pose,face,lh, rh= get_frame_detections(result)
+                frame_detection= np.concatenate((pose, lh, rh))                   # here we eliminate face landmarks for drawing.
+                p_co, f_co, l_co, r_co= get_frame_coordinates(result, frame)      # turning results into coordinates
+                frame_coordinates= p_co+ l_co+ r_co                               # shape: 1, frame_number, 75 tuples                 
+                
+                frames.append(frame)                                              # append
+                result_objs.append(result)                                       
+                video_detection.append(frame_detection)  
+                video_coordinates.append(frame_coordinates)
                     
-            label= int(os.path.basename(video_path).split('_')[0]) - 1
+            if class_names== autslclass_names:    # for AUTSL
+                video_idx= int(os.path.basename(os.path.dirname(video_path))) # extract video index from the video folder
+                label= vid_idx_to_label[video_idx]                            # map the video index to a label      
+            elif class_names== lsa64class_names:  # for LSA64
+                video_idx= int(os.path.basename(video_path).split('_')[0])    # extract index from the video title: 001_004_003 -> 1
+                label= vid_idx_to_label[video_idx-1]                          # map the index to the correct label
+
+            print(f"Calculating landmark attributions for the sign language video {label}")
+            video_detection = np.array(video_detection, dtype=np.float64)                     # torch said to change list of numpy to np array so its faster
+            video_detection, label= convert(video_detection, [label], class_names)                                     # converting to tensors
+            attributions= landmark_attributions(model, captum_method, video_detection, label, device)                  # shape: 1, frame_number, 75
+
+            vid_color_scale= (attributions[0] - attributions[0].min()) / (attributions[0].max()-attributions[0].min()) # normalizing attributions
+            vid_color_scale= vid_color_scale* 255 
+            vid_color_scale = vid_color_scale.cpu().numpy()   
+
+            for i, frame in enumerate(frames):
+                plot_mp_landmarks(frame, result_objs[i])
+                plot_circle(frame, video_coordinates[i], vid_color_scale[i])
+                
+                cv2.imshow('Frame with Attributions', frame)
+                #cv2.resizeWindow('Frame with Attributions', int(frame.shape[1] * 0.6), int(frame.shape[0] * 0.6))  # make it smaller
+                if cv2.waitKey(30) & 0xFF == 27:
+                    break
+
+        except Exception as e:
+            print(f"Error happened while processing: {e}")
+            raise
+            
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
     
-        cap.release()
-        
-        return results, pixel_coor, video_detections, label
-
-
-def calculate_means(attributions: Tensor):
+#------------------------------------------------------------------working with attention values-------------------------------------------------------------
+# function for calculating mean attentions
+def landmark_attributions(model: torch.nn.Module,
+                          captum_method: Attribution,
+                          video_detection: torch.Tensor, 
+                          label: torch.Tensor, 
+                          device: torch.device,):
     """
-    Calculates the mean Layer attribution of a landmark. each landmark has x, y, z (and in case of pose_landmarks visibility) values
-    each landmark value has an attribution that can effect the transformer layer. mean acts as a parameter that shows how much a 
-    landmark is effecting the output of the model.
+    Calculates the mean layer attribution of landmarks in  a video. each landmark has x, y, z (and in case of pose_landmarks visibility) values. mean layer
+    attribution
+    acts as a parameter that shows how much a landmark is effecting the output of the model.
     Args:
-        attributions: a tensor of shape(1, frame_number, 1662)
+        model: model that we want to analyse
+        captum_method: LayerConductance, Saliency, IntegratedGradients
+        video detection : a tensor of shape(frame_number, 1662 or 258)
+        label: label of the video
     Returns:
-        means: a tensor of shape (1, frame_number, 543)
+        means: a tensor of shape (1, frame_number, landmark_number)
     """
-    # calculate mean for first 132 pose landmark, pose landmark structure is (x, y, z, visibility)
-    first_part = attributions[:, :, :132]                            
-    first_part_reshaped = first_part.reshape(attributions.shape[0], attributions.shape[1], -1, 4)
-    first_part_means = first_part_reshaped.mean(dim=3)
+    model.eval()                                                             # set model to evaluation mode
+    model.to(device)
+    video_detection, label = video_detection.to(device), label.to(device)    # put on GPU
+    video_detection= video_detection.unsqueeze(0)                        
+    video_detection.requires_grad_()
 
-    # calculate mean for the rest of landmarks (face, left_hand, right_hand), their structure is (x, y, z)
-    second_part = attributions[:, :, 132:]
-    second_part_reshaped = second_part.reshape(attributions.shape[0], attributions.shape[1], -1, 3)
-    second_part_means = second_part_reshaped.mean(dim=3)
+    attributions= captum_method.attribute(inputs= video_detection, target= label.item())
     
-    # Concatenate first and second part
-    means = torch.cat((first_part_means, second_part_means), dim=2)
+    pose = attributions[:, :, :132]                                          # shape: 1, frame_number, 132
+    pose = pose.reshape(attributions.shape[0], attributions.shape[1], -1, 4) # shape: 1, frame_number, 33, 4
+    pose_means = pose.mean(dim=3)                                            # shape: 1, frame_number, 33
+    
+    rest = attributions[:, :, 132:]                                          # shape: 1, frame_number, 1530 or 126
+    rest = rest.reshape(attributions.shape[0], attributions.shape[1], -1, 3) # shape: 1, frame_number, 510 or 42, 3
+    rest_means = rest.mean(dim=3)                                            # shape: 1, frame_number, 510 or 42
+    means = torch.cat((pose_means, rest_means), dim=2)                       # shape: 1, frame_number, 510+33 or 42+33
     
     return means
 
+def landmark_attributions_for_dataset(model, captum_method, dataset, device):
+    '''
+    This function calculates the mean layer attribution of landmarks over the dataset.
+    '''
+    total_lm_atts= None
+    for data in tqdm(dataset):
+        video_detection, label = data[0], data[1]
+        video_lm_atts= landmark_attributions(model, captum_method, video_detection, label, device)
+    
+        if total_lm_atts is None:
+            total_lm_atts = torch.zeros_like(video_lm_atts)
+    
+        total_lm_atts+= video_lm_atts
+    
+    lm_atts_dataset = total_lm_atts / len(dataset)
+    return lm_atts_dataset
+#-------------------------------------------------------------------plotting heatmap -------------------------------------------------------------------------
 
-def make_idx_tr_pairs(indices: Tensor, 
-                      means: Tensor):
+# function for drawing the attention heatmap
+def plot_atts_heatmap(attributions: Tensor, save_path: str, show_landmark_names: bool = False):
     """
+    For a video, this function plots attribution as a heatmap where x axis are frames, y axis are landmarks and the colors represent attribution values.
     Args:
-        indices: a tensor that contains indices of most to least significant landmarks for each frame
-        means: output of the above function it is basically used as a transparency score from 0 to 10
-
-    Returns:
-        idx_tr: an ordered list containing indices of most to least significant landmarks for each frame along with their transparency score
-
-    Note:
-        the reason idx_tr is an ordered list is so that we can draw landmarks from least to most important. this is usefull
-        when for example a left hand landmark that is important hovers over a face landmrk. in this case it is drawn on top of 
-        the less imoprtant landmark.
+        attributions: a tensor of shape(1, frame_number, 1662 or 258)
+        show_landmark_names: boolean variable for showing landmark names
+    Note: vmin and vmax are chosen based on trail and error.
     """
-    #prepare transparency_level
-    transparency_level= means/ torch.max(abs(means))
-    transparency_level= transparency_level * 10
-    
-    
-    list_1= indices.tolist()
-    list_2= transparency_level.int().tolist()
-    
-    idx_trs = []
-    for f in range(len(list_1[0])):  
-        frame = []
-        for i in range(len(list_1[0][f])):
-            index = list_1[0][f][i]  
-            value = list_2[0][f][index]  
-            frame.append((index, value))  
-        idx_trs.append(frame)  
+    atts = attributions.detach().cpu().numpy()     # moving tensor to CPU for drawing 
+    num_frames, num_features = atts[0].shape       # remove batch dimention and get frame and featur numbers
+    plt.figure(figsize=(20, 15))
+    if show_landmark_names:
+        atts = atts[:, :, reordered_idxs]          # reorder the landmarks
+        y_ticks_labels = reordered_landmarks
+        y_ticks_positions = range(0, num_features)
+    else:
+        y_ticks_labels = None 
+        y_ticks_positions = range(0, num_features, 5) 
+        
+    plt.imshow(atts[0].T, cmap='viridis', aspect='auto', origin='lower') # we transpose attributions so landmarks are on y axis
+    plt.colorbar()
+    plt.xlim(0, num_frames - 1)
+    plt.xticks(range(0, num_frames))
+    plt.xlabel("frames")
+    plt.ylim(0, num_features - 1)
+    plt.yticks(y_ticks_positions, y_ticks_labels)
+    plt.ylabel("features")
+    plt.title("Attributions")
+    if save_path:
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
 
-    return idx_trs
+    plt.tight_layout()
+    plt.show()
 
-
-def plot_atts_heatmap(attributions: Tensor, title="Attributions"):
-    """
-    This function plots attribution as a heatmap where x axis are attributes and y axis are frames
-    """
-    attributions = attributions.detach().cpu().numpy()  # Move tensor to CPU before converting to NumPy
-    batch_size, seq_len, num_features = attributions.shape
-    
-    for i in range(batch_size):
-        plt.figure(figsize=(12, 6))
-        plt.imshow(attributions[i].T, cmap='viridis', aspect='auto', origin='lower')
-        plt.colorbar()
-        plt.title(f"{title} - Sample {i}")
-        plt.xlabel("Sequence Length")
-        plt.ylabel("Features")
-        plt.xticks(range(0, seq_len, 1))  # Set ticks every 5 units
-        plt.xlim(0, seq_len - 1)  # Set x-axis limits
-        plt.yticks(range(0, num_features, 100))  # Set ticks every 10 units
-        plt.ylim(0, num_features - 1)  # Set y-axis limits
-        plt.show()
-
-
+#---------------------------------------------------------------------plotting on data on video---------------------------------------------------------------
 def plot_mp_landmarks(frame, result):
     """
     This function draws landmarks and connections on a given frame.
@@ -195,62 +238,18 @@ def plot_mp_landmarks(frame, result):
                               mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
 
 
-
-def plot_circle(frame, coor, idx_tr):
+def plot_circle(frame, coordinates, frame_colorscale):
     """
-    This function visualizes layer attributions in a frame.
+    This function visualizes layer attributions by drawing circles on detected landmarks.
     Args:
-        frame: video frame that we want to draw on.
-        coor: list of all (x, y) coordinates of the landmarks detected in the frame
-        idx_tr: contain indexes of landmarks and their transparency score. the indexes correspond to the 
-        coordinates of the landmarks in coor list.
-    Note:
-        for more information about landmark indexes take a look at get_landmarks and draw_layer_attr functions.
-        
+        frame: The video frame we want to draw on.
+        coordinates: List of (x, y) coordinates of landmarks detected in the frame.
+        attributions: List of tuples where each tuple is (landmark index, attribution score). The attribution score determines the intensity of the circle
+        color.
+                      
     """
-    for idx, tr in reversed(idx_tr[:75]):
-        intensity = int(min(255, max(0, 255 * abs(tr) / 10)))
-
-        color = (intensity, 255, 0)  
-
-        cv2.circle(frame, (coor[idx][0], coor[idx][1]), radius=5, color=color, thickness=-1)
-
-
-def draw_layer_attr(video_path, results, pixel_coor, idx_trs, frame_numbers = 30, wait= 200):
-    """
-    This function visualizes layer attributions in the video.
-    Args:
-        video_path: path to the video.
-        results: set of all (x, y) coordinates of the landmarks detected in the frame
-        pixel_coor: this list contains indexes of most important landmarks, it can be any number from 0 to 542.
-        idx_trs: an ordered list of tuples containing the index landmarks and their transparency
-        
-    """
-    #'C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/lsa64_raw/all/001_001_001.mp4'
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        print(f"ERROR in opening the video path{video_path}")
-    else:
-        total_frames_number = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        frame_idxs_to_process = np.linspace(0, total_frames_number - 1, frame_numbers, dtype=int)
-        
-        for frame_idx, result, coor, idx_tr in zip(frame_idxs_to_process ,results , pixel_coor, idx_trs):
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
-            ret, frame = cap.read()
-            if not ret:
-                break
-            plot_mp_landmarks(frame, result)
-            plot_circle(frame, coor, idx_tr)
-
-            width = int(frame.shape[1] * 0.60)
-            height = int(frame.shape[0] * 0.60)
-            resized_frame = cv2.resize(frame, (width, height))
-
-            cv2.imshow("Video", resized_frame)
-        
-            # Set wait time to 33 milliseconds for approx. 30 fps
-            if cv2.waitKey(wait) & 0xFF == 27:  # Exit on ESC key
-                break
-        
-        cap.release()
-        cv2.destroyAllWindows()
+    for idx, color_scale in enumerate(frame_colorscale):  
+        intensity = int(color_scale)
+        color = (intensity, 255 , 0)
+        x, y = coordinates[idx]
+        cv2.circle(frame, (x, y), radius=5, color=color, thickness=-1)
