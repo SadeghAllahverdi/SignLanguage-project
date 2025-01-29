@@ -14,12 +14,12 @@ In this repository, the codes for my Isolated Sign Language detection project ar
 <br/>
 <br/>
 <br/>
-WLASL100 dataset is only provided in 25 fps.
+AUTSL dataset is only provided in 30 fps.
 <br/>
-**Download Mediapipe landmarks and labels for WLASL100]**
+**Download Mediapipe landmarks and labels for AUTSL 40]**
 <br/>
 (https://drive.google.com/drive/folders/1vupDY3DaFvmBdt_beXWIMqShPkHrcVeU?usp=drive_link)
 <br/>
-**File path:** SignLanguageProject/data/landmarks_wlasl100
+**File path:** SignLanguageProject/data/landmarks_autsl40
 
 **After download, please copy the downloaded files under the provided file path.**
