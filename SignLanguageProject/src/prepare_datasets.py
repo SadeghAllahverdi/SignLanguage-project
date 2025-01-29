@@ -37,6 +37,8 @@ wlasl100class_names = ["accident", "africa", "all", "apple", "basketball", "bed"
                        "right","same", "school", "secretary", "shirt", "short", "son", "study", "table", "tall", "tell", "thanksgiving", "thin", "thursday",
                        "time", "walk", "want", "what", "white", "who", "woman", "work", "wrong", "year", "yes"]
 
+top_35_indexes= [2, 3, 4, 7, 9, 10, 11, 13, 15, 20, 22, 27, 29, 35, 36, 42, 48, 50, 53, 54, 58, 59, 62, 63, 66, 67, 69, 77, 81, 82, 90, 93, 94, 95, 99]
+wlasl35class_names= [wlasl100class_names[i] for i in top_35_indexes]
 #--------------------------------------------------------------------Getting landmarks--------------------------------------------------------------------------
 # function to get landmarks from LSA64 or AUTSL40 dataset.
 def get_landmarks(root: str,
@@ -103,7 +105,31 @@ def get_landmarks(root: str,
         
     return detections, labels, len(all_video_paths), none_cv2_video_paths
 
-# function to get landmarks from WLASL100 dataset.
+#----------------------------------------------------------------Helping functions--------------------------------------------------------------------------
+def get_frame_detections(result):
+    '''
+    This function turns the result objects obtianed with mediapipe into flattened numpy arrays
+    '''
+    pose= np.array([[res.x, res.y, res.z, res.visibility] for res in result.pose_landmarks.landmark]).flatten() if result.pose_landmarks else np.zeros(33*4) 
+    face= np.array([[res.x, res.y, res.z] for res in result.face_landmarks.landmark]).flatten() if result.face_landmarks else np.zeros(468*3) 
+    lh= np.array([[res.x, res.y, res.z] for res in result.left_hand_landmarks.landmark]).flatten() if result.left_hand_landmarks else np.zeros(21*3)
+    rh= np.array([[res.x, res.y, res.z] for res in result.right_hand_landmarks.landmark]).flatten() if result.right_hand_landmarks else np.zeros(21*3)
+    return pose, face, lh, rh
+    
+
+def get_frame_coordinates(result, frame):
+    '''
+    This function turns the result objects to a list of coordinates
+    '''
+    p_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.pose_landmarks.landmark] if result.pose_landmarks else [(0,0)]*33 
+    f_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.face_landmarks.landmark] if result.face_landmarks else [(0,0)]* 468 
+    l_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.left_hand_landmarks.landmark] if result.left_hand_landmarks else [(0,0)]*21
+    r_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.right_hand_landmarks.landmark] if result.right_hand_landmarks else [(0,0)]*21
+    return p_co, f_co, l_co, r_co
+
+#---------------------------------------------------------------Additional functions------------------------------------------------------------------------
+# (!!!!!Since WLASL 100 was excluded, these functions are not used in the main ipynb files. !!!!) nevertheless they are working and were developed by me
+# function to get landmarks from WLASL100 dataset. 
 def get_landmarks_WLASL100(root: str,
                            class_names: List[str],
                            frame_numbers: int):
@@ -176,29 +202,7 @@ def get_landmarks_WLASL100(root: str,
             
         return detections, labels, len(all_video_paths), none_cv2_video_paths
 
-#----------------------------------------------------------------Additional functions--------------------------------------------------------------------------
-def get_frame_detections(result):
-    '''
-    This function turns the result objects obtianed with mediapipe into flattened numpy arrays
-    '''
-    pose= np.array([[res.x, res.y, res.z, res.visibility] for res in result.pose_landmarks.landmark]).flatten() if result.pose_landmarks else np.zeros(33*4) 
-    face= np.array([[res.x, res.y, res.z] for res in result.face_landmarks.landmark]).flatten() if result.face_landmarks else np.zeros(468*3) 
-    lh= np.array([[res.x, res.y, res.z] for res in result.left_hand_landmarks.landmark]).flatten() if result.left_hand_landmarks else np.zeros(21*3)
-    rh= np.array([[res.x, res.y, res.z] for res in result.right_hand_landmarks.landmark]).flatten() if result.right_hand_landmarks else np.zeros(21*3)
-    return pose, face, lh, rh
-    
-
-def get_frame_coordinates(result, frame):
-    '''
-    This function turns the result objects to a list of coordinates
-    '''
-    p_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.pose_landmarks.landmark] if result.pose_landmarks else [(0,0)]*33 
-    f_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.face_landmarks.landmark] if result.face_landmarks else [(0,0)]* 468 
-    l_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.left_hand_landmarks.landmark] if result.left_hand_landmarks else [(0,0)]*21
-    r_co= [(int(r.x * frame.shape[1]), int(r.y * frame.shape[0])) for r in result.right_hand_landmarks.landmark] if result.right_hand_landmarks else [(0,0)]*21
-    return p_co, f_co, l_co, r_co
-
-# function to interpolate two frames of a video.
+# function to interpolate two frames of a video and fill in the bad frame.
 def interpolate_frame_detections(most_recent_detection, next_coming_detection, alpha):
     """
     Based on the value of most recent detection and next coming detection which are the frames before and after our faulty frame returns a landmark array for
@@ -224,7 +228,7 @@ def interpolate_frame_detections(most_recent_detection, next_coming_detection, a
 # function to fill the empty detections in the videos using interpolation
 def fill_empty_detections(detections):
     """
-    In principle fills up the empty landmark detections for frames that where faulty in the dataset and returns the dataset .
+    In principle fills up the empty landmark detections for frames that where faulty in the dataset and returns the dataset.
     Args:
         detections: all video detections from mediapipe
     Returns:
@@ -246,7 +250,7 @@ def fill_empty_detections(detections):
                     else:
                         continue
                      
-                video_detection[i]= interpolate_frames(most_recent_detection, next_coming_detection, 0.5)
+                video_detection[i]= interpolate_frame_detections(most_recent_detection, next_coming_detection, 0.5)
                 most_recent_detection= video_detection[i]
 
     return detections

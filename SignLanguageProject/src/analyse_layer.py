@@ -52,6 +52,7 @@ def plot_attributions_on_video(video_path: str,
         video_path: Path to the video sample.
         captum_method: ex:  Saliency
         class_names: List of all words in the dataset from which we took that video.
+        device: The device that the computation is going to take place on (CPU and GPU)
         frame_numbers: number of frames we want to take from the entire video.
     Example usage:
         result_objs, coordiantes, video_detection, label= get_landmarks_from_vid(video_path, class_name, 30) 
@@ -123,7 +124,49 @@ def plot_attributions_on_video(video_path: str,
         finally:
             cap.release()
             cv2.destroyAllWindows()
-    
+
+
+def plot_mediapipe_drawing_on_video(video_path: str,
+                                    frame_numbers: int = 30):
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"ERROR in opening the video path{video_path}")
+        return
+        
+    with mp.solutions.holistic.Holistic(min_detection_confidence= 0.5, min_tracking_confidence=0.5) as holistic:
+        try:
+            frames= []
+            result_objs= []        # stores mediapipe result objects from each frame of the video
+            
+            total_frames_number = cap.get(cv2.CAP_PROP_FRAME_COUNT)                                 
+            total_frames_number= int(total_frames_number)
+            frame_idxs_to_process = np.linspace(0, total_frames_number-1, frame_numbers, dtype=int) # desired frame indexes
+            
+            for idx in frame_idxs_to_process:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, idx)       # set cv2 to the desired index
+                ret, frame= cap.read()                      # process the frame in that index
+                if not ret:
+                    print("unreadble frame detected")       # incase there is any unreadable frame
+                    break   
+
+                result= holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))  # processing frame with Mediapip                
+                frames.append(frame)                                           
+                result_objs.append(result)                                                       
+
+            for i, frame in enumerate(frames):
+                #plot_mp_landmarks(frame, result_objs[i])
+                cv2.imshow('Frame with Attributions', frame)
+                #cv2.resizeWindow('Frame with Attributions', int(frame.shape[1] * 0.6), int(frame.shape[0] * 0.6))  # make it smaller
+                if cv2.waitKey(30) & 0xFF == 27:
+                    break
+
+        except Exception as e:
+            print(f"Error happened while processing: {e}")
+            raise
+            
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
 #------------------------------------------------------------------working with attention values-------------------------------------------------------------
 # function for calculating mean attentions
 def landmark_attributions(model: torch.nn.Module,
@@ -140,8 +183,9 @@ def landmark_attributions(model: torch.nn.Module,
         captum_method: LayerConductance, Saliency, IntegratedGradients
         video detection : a tensor of shape(frame_number, 1662 or 258)
         label: label of the video
-    Returns:
-        means: a tensor of shape (1, frame_number, landmark_number)
+         device: The device that the computation is going to take place on (CPU and GPU)
+    Example usage:
+        lm_attributions= landmark_attributions(model,  sailency, video_detection, label, device)
     """
     model.eval()                                                             # set model to evaluation mode
     model.to(device)
@@ -165,6 +209,8 @@ def landmark_attributions(model: torch.nn.Module,
 def landmark_attributions_for_dataset(model, captum_method, dataset, device):
     '''
     This function calculates the mean layer attribution of landmarks over the dataset.
+    Example Usage:
+        lm_atts_dataset= landmark_attributions_for_dataset(model, sailency, dataset, device)
     '''
     total_lm_atts= None
     for data in tqdm(dataset):
@@ -181,7 +227,7 @@ def landmark_attributions_for_dataset(model, captum_method, dataset, device):
 #-------------------------------------------------------------------plotting heatmap -------------------------------------------------------------------------
 
 # function for drawing the attention heatmap
-def plot_atts_heatmap(attributions: Tensor, save_path: str, show_landmark_names: bool = False):
+def plot_atts_heatmap(attributions: Tensor, save_path: str, show_landmark_names: bool = False, vmin= None, vmax= None):
     """
     For a video, this function plots attribution as a heatmap where x axis are frames, y axis are landmarks and the colors represent attribution values.
     Args:
@@ -200,7 +246,7 @@ def plot_atts_heatmap(attributions: Tensor, save_path: str, show_landmark_names:
         y_ticks_labels = None 
         y_ticks_positions = range(0, num_features, 5) 
         
-    plt.imshow(atts[0].T, cmap='viridis', aspect='auto', origin='lower') # we transpose attributions so landmarks are on y axis
+    plt.imshow(atts[0].T, cmap='viridis', aspect='auto', origin='lower', vmin= vmin, vmax= vmax) # we transpose attributions so landmarks are on y axis
     plt.colorbar()
     plt.xlim(0, num_frames - 1)
     plt.xticks(range(0, num_frames))
@@ -225,17 +271,17 @@ def plot_mp_landmarks(frame, result):
         
     """
     mp_drawing.draw_landmarks(frame, result.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
-                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
-                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
-    mp_drawing.draw_landmarks(frame, result.face_landmarks, mp_holistic.FACEMESH_CONTOURS,
-                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
-                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
+                              mp_drawing.DrawingSpec(color= (255, 0, 0), thickness= 1, circle_radius= 2),
+                              mp_drawing.DrawingSpec(color= (255, 0, 0), thickness= 1, circle_radius= 2))
+    #mp_drawing.draw_landmarks(frame, result.face_landmarks, mp_holistic.FACEMESH_CONTOURS,
+    #                          mp_drawing.DrawingSpec(color= (255, 0, 0), thickness= 1, circle_radius= 1),
+    #                          mp_drawing.DrawingSpec(color= (255, 0, 0), thickness= 1, circle_radius= 1))
     mp_drawing.draw_landmarks(frame, result.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
                               mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
                               mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
     mp_drawing.draw_landmarks(frame, result.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2),
-                              mp_drawing.DrawingSpec(color= (0, 255, 0), thickness= 1, circle_radius= 2))
+                              mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 2),
+                              mp_drawing.DrawingSpec(color= (0, 0, 255), thickness= 1, circle_radius= 2))
 
 
 def plot_circle(frame, coordinates, frame_colorscale):
@@ -244,8 +290,7 @@ def plot_circle(frame, coordinates, frame_colorscale):
     Args:
         frame: The video frame we want to draw on.
         coordinates: List of (x, y) coordinates of landmarks detected in the frame.
-        attributions: List of tuples where each tuple is (landmark index, attribution score). The attribution score determines the intensity of the circle
-        color.
+        frame_colorscale: a color scaling based on attribution values.
                       
     """
     for idx, color_scale in enumerate(frame_colorscale):  

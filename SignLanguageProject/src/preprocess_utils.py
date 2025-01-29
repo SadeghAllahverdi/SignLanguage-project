@@ -62,8 +62,8 @@ def interpolate_video_detections(video_detection_1: NDArray[np.float64],
 # function to apply the interpolation to the entire dataset
 def interpolate_dataset(detections: NDArray[np.float64],
                         labels: List[str],
-                        alpha: float= 0.5,
-                        num_interpolation_samples: int= 10):
+                         alpha: float= 0.5,
+                         noise_level: float= 0.001):
     """
     This function applies interpolation accross the entire dataset. It only interpolates between videos that have the same label. 
     Args:
@@ -78,7 +78,6 @@ def interpolate_dataset(detections: NDArray[np.float64],
     """
     current_data= defaultdict(list)                 # stores current data
     interpolated_data= defaultdict(list)            # stores interpolated data
-    augumented_data = defaultdict(list)             # union of current and interpolated data
     
     frame_structure= [(0, 132), (132, 1536), (1536, 1599), (1599, 1662)]  # represents the indexes of the concatenated pose, face, lh, rh
     
@@ -95,42 +94,46 @@ def interpolate_dataset(detections: NDArray[np.float64],
         for i in range(len(video_detections)):
             for j in range(i+1, len(video_detections)):
                 pairs.append((i, j))
-
-        # since all considering all combinations is too much. randomly select a specific number of video pairs
-        selected_pairs = random.sample(pairs, min(num_interpolation_samples, len(pairs)))
+        # randomly select a number of pairs equal to the number of samples that are available for that label
+        selected_pairs = random.sample(pairs, len(video_detections))
+        # interpolating the randomly selected pairs
         for (i, j) in selected_pairs:
             video_detection_1= video_detections[i]
             video_detection_2= video_detections[j]
+            
             inter_vid_detection = interpolate_video_detections(video_detection_1, video_detection_2, frame_structure, alpha) #interpolate
-
-            # add to the interpolated_data dictionary
-            interpolated_data[label].append(inter_vid_detection)
-    
+            # adding random gaussian noise
+            noise = np.random.normal(0, noise_level, inter_vid_detection.shape[1:])  
+            noisy_interpolated = np.clip(inter_vid_detection + noise, 0.001, 0.999)
+            # adding the new sample under the label it belongs to
+            interpolated_data[label].append(noisy_interpolated)
+            
     # add video detections of both current and interpolated data together 
-    for data in (current_data, interpolated_data):
-        for label, video_detections in data.items():
-            augumented_data[label].extend(video_detections)
-    
-    # convert the dictionary back into detection, label arrays
-    for label, video_detections in augumented_data.items():
-        for video_detection in video_detections:
+    for label in current_data:
+        original_videos = current_data[label]  # Original samples
+        interpolated_videos = interpolated_data[label]  # Interpolated samples
+
+        combined_videos = original_videos + interpolated_videos
+        sampled_videos = random.sample(combined_videos, len(original_videos))  # Randomly pick samples so that the original number of samples is preserved
+
+        for video_detection in sampled_videos:
             x.append(video_detection)
             y.append(label)
 
     return np.array(x), y
 
 #-------------------------------------------------------------------------Split Data--------------------------------------------------------------------------
-
+#function to convert detections and labels to the right format for training
 def convert(detections: NDArray[np.float64],
             labels: List[str],
             class_names: List[str]):
     """
-    This function maps our Labels to numbers. so that they are prepared for the training phase (ex: it maps the label "Red" to number 1). It also changes the
+    This function maps our Labels to numbers so that they are prepared for the training phase (ex: it maps the label "Red" to number 1). It also changes the
     detections from float64 to float32. since float64 would generate errors when training.
     Args:
         detections: array of all video detections
         label: labels for each video detection
-        class_names: list of all class names withing the dataset
+        class_names: list of all class names withing the dataset. it is used to make a dictionray that converts labels to numbers.
     Returns:
         a tuple of (X, y) where X is our features/ detections and has type tensor float 32 and y is our label and has type long.
     Example use:
@@ -143,6 +146,7 @@ def convert(detections: NDArray[np.float64],
     
     return X, y
 
+# fuction that splits the dataset for training
 def split_dataset(detections: NDArray[np.float64],
                   labels: List[str],
                   class_names: List[str],
@@ -159,7 +163,7 @@ def split_dataset(detections: NDArray[np.float64],
     Example usage:
         xtrain, xtest, ytrain, ytest= split_dataset(detections, labels, class_names, 0.2)
     """
-    X_train, X_test, y_train, y_test = train_test_split(detections, labels, test_size= test_size, random_state=42, stratify=labels)
+    X_train, X_test, y_train, y_test = train_test_split(detections, labels, test_size= test_size, random_state= 42, stratify=labels)
     X_train, y_train= convert(X_train, y_train, class_names)
     X_test, y_test= convert(X_test, y_test, class_names)
     

@@ -22,9 +22,9 @@ from plot_utils import draw_in_tensorboard, plot_confusion_matrix, plot_loss_acc
 from train_utils import train_model, reset_model_parameters # for K fold cross validation if necessary
 
 #-------------------------------------------------------------Constant variables and classes-------------------------------------------------------------------
-# path to experiment directory: where the tensorboard files are saved
+# path to experiment directory: where the tensorboard files are saved (!!!!should be changed based on system file structure!!!!)
 experiment_dir= "C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/SignLanguageProject/experiment_results"
-# path to the current directory incase we want to save some plotting pictures quickly
+# path to the current directory incase we want to save some plotting pictures quickly (!!!!should be changed based on system file structure!!!!)
 current_dir= "C:/Users/sadeg/OneDrive/Desktop/Thesis/python_codes/SignLanguageProject/notebooks"
 # A simple dataset class from to CustomImageDataset example from pytorch.org
 class CustomDataset(Dataset):
@@ -53,9 +53,11 @@ def configure(detections: NDArray[np.float64],
               device: torch.device,
               quick_save: bool,
               results_name: str,
-              dataset_name: Literal['LSA64', 'WLASL100', 'AUTSL40']):
+              dataset_name: Literal['LSA64', 'AUTSL40']):
     """
-    This function configures the training enviroment.  
+    This function configures the training enviroment. The function first splits the datasets, then creates dataset and dataloader objects, following that 
+    the functions sends the model to the device, it defines loss function and optimizer algorithim for the train process. Afterwards the model trains the model
+    and plots the results and saves them to the right directory.
     Args:
         detections: array of all video detections
         labels: list of all video labels
@@ -65,9 +67,11 @@ def configure(detections: NDArray[np.float64],
         lr: learning rate
         device: the device that we use for training (Cuda or CPU)
         results_name: used to identify different training results
-        save_plots: a boolean for quick saving the plots in current dir
+        quick_save: a boolean for quick saving the plots in current dir
         data_set_dir: The directory where the results are saved
     """
+    #X_train, X_test, y_train, y_test = train_test_split(detections, labels, test_size= test_size, random_state= 42, stratify=labels)
+
     X_train, X_test, y_train, y_test= split_dataset(detections, labels, class_names, test_size)  # split the dataset
     train_dataset= CustomDataset(X_train, y_train)      # train_dataset
     test_dataset= CustomDataset(X_test, y_test)         # test dataset
@@ -100,7 +104,9 @@ def configure_Kfold(detections: NDArray[np.float64],
                     device: torch.device,
                     quick_save: bool):
     """
-    This function configures the training enviroment for KFold cross validation  
+    This function configures the training enviroment for KFold cross validation. For each fold, The function first splits the datasets, then creates dataset
+    and dataloader objects, following that the functions sends the model to the device, it defines loss function and optimizer algorithim for the train 
+    process. Afterwards the model trains the model and plots the results and saves them to the right directory. 
     Args:
         detections: array of all video detections
         labels: list of all video labels
@@ -110,6 +116,7 @@ def configure_Kfold(detections: NDArray[np.float64],
         num_epochs: number of epochs
         lr: learning rate
         device: Cuda or CPU
+        quick_save: a boolean for quick saving the plots in current dir
     """
     X, y= convert(detections, labels, class_names) # converting detections and labels to the right format.
     dataset= CustomDataset(X, y)                   # making dataset

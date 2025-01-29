@@ -89,7 +89,8 @@ class EncoderLayer(nn.Module):
     return x
 
 #------------------------------------------------------------------Transformer Models---------------------------------------------------------------------------
-# encoder based transformer model for classification, no positional encoding
+# encoder based transformer model for classification (This parent class has no positional encoding)
+# PE is added to the inherited classes so the code is more clean and clear to read 
 class Transformer(nn.Module):
     def __init__(self, class_names: List[str], seq_len: int, d_model: int, nhead: int, d_ff: int = 2048, num_layers: int = 2, dropout: float = 0.1):
         """
@@ -150,24 +151,6 @@ class ParamTransformer(Transformer):
         output = torch.mean(output, dim=1)
         output = self.classifier(output)
         return output
-
-# encoder based transformer model for classification, with 1D CNN for positional encoding
-class ConvoTransformer(Transformer):
-    def __init__(self, class_names: List[str], seq_len: int, d_model: int, nhead: int, input_shape: int, kernel_size: int = 1, d_ff: int = 2048, num_layers: int = 2,  dropout: float = 0.1):
-        super().__init__(class_names, seq_len, d_model, nhead, d_ff, num_layers, dropout)
-        self.model_type = 'convotransformer'
-        self.positional_encoding = nn.Conv1d(in_channels=input_shape, out_channels=d_model, kernel_size=kernel_size)
-
-    def forward(self, src: torch.Tensor):
-        src = src.permute(0, 2, 1)
-        output = self.positional_encoding(src)
-        output = output.permute(0, 2, 1)
-        for encoder_layer in self.encoder_layers:
-            output = encoder_layer(output)
-        output = torch.mean(output, dim=1)
-        output = self.classifier(output)
-        return output
-
 #----------------------------------------------------------------------------LSTM Model------------------------------------------------------------------------
 class LstmModel(nn.Module):
     def __init__(self, class_names: List[str], input_size: int, hidden_size: int, num_layers: int= 1, activition: Callable= nn.ReLU()):
@@ -187,7 +170,7 @@ class LstmModel(nn.Module):
     def forward(self, src):
         output = src
         for lstm in self.lstm_layers:
-            output, hidden_states = lstm(output)
+            output, final_states = lstm(output)
             output = self.activition(output)
 
         output= self.fc(output[:,-1,:])
