@@ -16,7 +16,7 @@ In this repository, the codes for my Isolated Sign Language detection project ar
 <br/>
 AUTSL dataset is only provided in 30 fps.
 <br/>
-**Download Mediapipe landmarks and labels for AUTSL 40]**
+**Download Mediapipe landmarks and labels for AUTSL 40**
 <br/>
 (https://drive.google.com/drive/folders/1vupDY3DaFvmBdt_beXWIMqShPkHrcVeU?usp=drive_link)
 <br/>
