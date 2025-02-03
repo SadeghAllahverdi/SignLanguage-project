@@ -86,10 +86,10 @@ This project uses publicly available sign language datasets:
 
  
 
-**Please download the datasets from the links below:**
+**You can download the landmarks that were detected using mediapipe here:**
 <br/>
 <br/>
-**LSA64** dataset has 4 versions in 30, 40, 50 and 60 fps along with their labels
+**LSA64** landmarks were extracted in 4 versions in 30, 40, 50 and 60 fps
 <br/>
 **Download extracted Mediapipe landmarks and labels**
 <br/>
@@ -99,7 +99,7 @@ This project uses publicly available sign language datasets:
 <br/>
 <br/>
 <br/>
-AUTSL dataset is only provided in 30 fps.
+AUTSL landmarks are only provided in 30 fps.
 <br/>
 **Download extracted Mediapipe landmarks and labels**
 <br/>
