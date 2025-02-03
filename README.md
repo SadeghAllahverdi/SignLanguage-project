@@ -2,7 +2,7 @@
 # Explainable Transformer Architecture for Word-Level Sign Language Classification  
 
 ## 📌 Project Overview  
-This project explores a **transformer-based deep learning model** for **word-level sign language classification**, with a strong emphasis on **model explainability**. The approach utilizes **saliency maps** to analyze and interpret model decisions, improving transparency in predictions.  
+This project explores a **transformer-based model** for **word-level sign language classification**, with a strong emphasis on **model explainability**. The approach utilizes **saliency maps** to analyze and interpret model decisions, improving transparency in predictions.  
 
 ## 📊 Key Highlights  
 - **📚 Datasets**  
