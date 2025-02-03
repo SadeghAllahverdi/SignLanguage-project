@@ -40,12 +40,20 @@ This project uses publicly available sign language datasets:
   <img src="images/movements_autsl.png" width="45%">
   <img src="images/movements_lsa64.png" width="45%">
 </p> 
+
 ### **2️⃣ Performance vs Hyperparameters**  
 <p align="center">
   <img src="images/performancevslayers.png" width="30%">
   <img src="images/performancevsnumheads.png" width="30%">
   <img src="images/performancevsdff.png" width="30%">
 </p>
+
+### **2️⃣ Average Saliency Maps**  
+<p align="center">
+  <img src="images/Saliencyautsl.png" width="40%">
+  <img src="images/Saliencyautsl.png" width="40%">
+</p>
+
 ### **3️⃣ Model Architecture**  
 ![Model Architecture](images/model_architecture.png) 
 
