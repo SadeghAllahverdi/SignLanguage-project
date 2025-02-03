@@ -45,7 +45,7 @@ The following visualizations illustrate **average movement trajectories** in sig
 </p>
 <p align="center">
   <figure>
-    <img src="images/movements1.mp4">
+    <img src="images/movements.mp4">
     <img src="images/movements1.mp4">
     <figcaption>Figure 1: Average movement trajectories in AUTSL subset</figcaption>
   </figure>
