@@ -38,9 +38,7 @@ The following visualizations illustrate **average movement trajectories** in sig
 
 ### **1️⃣ Mediapipe Keypoints**
 <p align="center">
-  <figure>
     <img src="images/mediapipe.png">
-  </figure>
 </p>
 
 <p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
