@@ -38,11 +38,11 @@ This project uses publicly available sign language datasets:
 ### **1️⃣ Average Movement Trajectories**
 <p align="center">
   <figure>
-    <img src="images/movements_autsl.png" width="45%">
+    <img src="images/movements_autsl.png" width="60%">
     <figcaption>Figure 1: Average movement trajectories in AUTSL subset</figcaption>
   </figure>
   <figure>
-    <img src="images/movements_lsa64.png" width="45%">
+    <img src="images/movements_lsa64.png" width="60%">
     <figcaption>Figure 2: Average movement trajectories in LSA-64 dataset.</figcaption>
   </figure>
 </p>
@@ -50,15 +50,15 @@ This project uses publicly available sign language datasets:
 ### **2️⃣ Performance vs Hyperparameters**
 <p align="center">
   <figure>
-    <img src="images/performancevslayers.png" width="30%">
+    <img src="images/performancevslayers.png" width="60%">
     <figcaption>Figure 3: Performance vs Number of Layers.</figcaption>
   </figure>
   <figure>
-    <img src="images/performancevsnumheads.png" width="30%">
+    <img src="images/performancevsnumheads.png" width="60%">
     <figcaption>Figure 4: Performance vs Number of Attention Heads.</figcaption>
   </figure>
   <figure>
-    <img src="images/performancevsdff.png" width="30%">
+    <img src="images/performancevsdff.png" width="60%">
     <figcaption>Figure 5: Performance vs Feedforward Dimension.</figcaption>
   </figure>
 </p>
@@ -66,11 +66,11 @@ This project uses publicly available sign language datasets:
 ### **3️⃣ Average Saliency Maps**
 <p align="center">
   <figure>
-    <img src="images/saliencyautsl.png" width="40%">
+    <img src="images/saliencyautsl.png" width="60%">
     <figcaption>Figure 6: Average saliency map for AUTSL dataset.</figcaption>
   </figure>
   <figure>
-    <img src="images/saliencylsa64.png" width="40%">
+    <img src="images/saliencylsa64.png" width="60%">
     <figcaption>Figure 7: Average saliency map for LSA-64 dataset.</figcaption>
   </figure>
 </p>
@@ -83,15 +83,6 @@ This project uses publicly available sign language datasets:
   </figure>
 </p>
 
-
-
-### **4️⃣ Model Architecture**
-<p align="center">
-  <figure>
-    <img src="images/transformerarchitecture.png" width="60%">
-    <figcaption>Figure 8: Transformer-based model architecture for sign language classification.</figcaption>
-  </figure>
-</p>
 
 
  
