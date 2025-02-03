@@ -36,44 +36,51 @@ This project uses publicly available sign language datasets:
 ## 📸 Sample Results  
 
 ### **1️⃣ Average Movement Trajectories**
-<p align="center">
-  <figure>
+<div style="display: flex; justify-content: center;">
+  <figure style="text-align: center; margin: 10px;">
     <img src="images/movements_autsl.png" width="45%">
-    <figcaption>Figure 1: Average movement trajectories in AUTSL subset.</figcaption>
+    <figcaption>Figure 1: AUTSL Subset</figcaption>
   </figure>
-  <figure>
+  <figure style="text-align: center; margin: 10px;">
     <img src="images/movements_lsa64.png" width="45%">
-    <figcaption>Figure 2: Average movement trajectories in LSA-64 dataset.</figcaption>
+    <figcaption>Figure 2: LSA-64 Dataset</figcaption>
   </figure>
-</p>
+</div>
 
 ### **2️⃣ Performance vs Hyperparameters**
-<p align="center">
-  <figure>
+<div style="display: flex; justify-content: center;">
+  <figure style="text-align: center; margin: 10px;">
     <img src="images/performancevslayers.png" width="30%">
-    <figcaption>Figure 3: Performance vs Number of Layers.</figcaption>
+    <figcaption>Layers vs Performance</figcaption>
   </figure>
-  <figure>
+  <figure style="text-align: center; margin: 10px;">
     <img src="images/performancevsnumheads.png" width="30%">
-    <figcaption>Figure 4: Performance vs Number of Attention Heads.</figcaption>
+    <figcaption>Attention Heads vs Performance</figcaption>
   </figure>
-  <figure>
+  <figure style="text-align: center; margin: 10px;">
     <img src="images/performancevsdff.png" width="30%">
-    <figcaption>Figure 5: Performance vs Feedforward Dimension.</figcaption>
+    <figcaption>Feedforward Dim vs Performance</figcaption>
   </figure>
-</p>
+</div>
 
 ### **3️⃣ Average Saliency Maps**
-<p align="center">
-  <figure>
+<div style="display: flex; justify-content: center;">
+  <figure style="text-align: center; margin: 10px;">
     <img src="images/saliencyautsl.png" width="40%">
-    <figcaption>Figure 6: Average saliency map for AUTSL dataset.</figcaption>
+    <figcaption>Figure 6: Saliency Map for AUTSL</figcaption>
   </figure>
-  <figure>
+  <figure style="text-align: center; margin: 10px;">
     <img src="images/saliencylsa64.png" width="40%">
-    <figcaption>Figure 7: Average saliency map for LSA-64 dataset.</figcaption>
+    <figcaption>Figure 7: Saliency Map for LSA-64</figcaption>
   </figure>
+</div>
+
+### **4️⃣ Model Architecture**
+<p align="center">
+  <img src="images/transformerarchitecture.png" width="60%">
+  <figcaption>Figure 8: Transformer-Based Model Architecture</figcaption>
 </p>
+
 
 ### **4️⃣ Model Architecture**
 <p align="center">
