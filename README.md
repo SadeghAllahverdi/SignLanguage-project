@@ -45,7 +45,6 @@ The following visualizations illustrate **average movement trajectories** in sig
 </p>
 
 <p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-
     <img src="images//movements-ezgif.com-video-to-gif-converter.gif" width= "70%">
     <img src="images//movements1-ezgif.com-video-to-gif-converter.gif" width= "70%">
 </p>
