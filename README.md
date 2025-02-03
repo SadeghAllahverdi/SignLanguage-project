@@ -36,25 +36,26 @@ This project uses publicly available sign language datasets:
 ## 📊 Data Analysis & Preprocessing
 The following visualizations illustrate **average movement trajectories** in sign language datasets and the **MediaPipe-based preprocessing pipeline** used to extract skeletal motion features.
 
-### **1️⃣ Average Movement Trajectories**
+### **1️⃣ Mediapipe Keypoints**
 <p align="center">
   <figure>
     <img src="images/mediapipe.png">
     <figcaption>Figure 1: Average movement trajectories in AUTSL subset</figcaption>
   </figure>
 </p>
-<p align="center">
-  <figure>
-    <img src="images//movements-ezgif.com-video-to-gif-converter.gif" width= "40%">
-    <img src="images//movements1-ezgif.com-video-to-gif-converter.gif" width= "40%">
-    <figcaption>Figure 1: Average movement trajectories in AUTSL subset</figcaption>
-  </figure>
+
+<p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+
+    <img src="images//movements-ezgif.com-video-to-gif-converter.gif" width= "70%">
+    <img src="images//movements1-ezgif.com-video-to-gif-converter.gif" width= "70%">
 </p>
+<p align="center"><b>Figure 1: Average movement trajectories in AUTSL subset</b></p>
+
 
 ### **1️⃣ Average Movement Trajectories**
 <p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-    <img src="images/movements_autsl.png" width="45%">
-    <img src="images/movements_lsa64.png" width="45%">
+    <img src="images/movements_autsl.png" width="70%">
+    <img src="images/movements_lsa64.png" width="70%">
 </p>
 <p align="center"><b>Figure 3: Average Movement in Autsl Subset and LSA 64 dataset.</b></p>
 
