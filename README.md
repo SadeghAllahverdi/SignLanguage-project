@@ -34,11 +34,22 @@ This project uses publicly available sign language datasets:
 - **Evaluation**: Accuracy metrics, saliency maps, and confusion matrices
 
 ## 📸 Sample Results  
-### **1️⃣ Model Attention via Saliency Maps**  
-![Saliency Map](movements_autsl.png)  
 
-### **2️⃣ Average Movement trajectories**  
-![Training Curve](movements_lsa64.png)  
+### **1️⃣ Average Movement Trajectories (AUTSL Subset)**  
+![Average Movements in AUTSL](images/movements_autsl.png)  
+
+### **2️⃣ Average Movement Trajectories (LSA-64 Dataset)**  
+![Average Movements in LSA-64](images/movements_lsa64.png)  
+
+### **3️⃣ Performance vs Hyperparameters**  
+<p align="center">
+  <img src="images/performancevslayers.png" width="30%">
+  <img src="images/performancevsnumheads.png" width="30%">
+  <img src="images/performancevsdff.png" width="30%">
+</p>
+
+### **4️⃣ Model Architecture**  
+![Model Architecture](images/model_architecture.png) 
 
  
 
