@@ -31,7 +31,7 @@ This project uses publicly available sign language datasets:
 ## 🚀 Technologies Used  
 - **Deep Learning Frameworks**: PyTorch  
 - **Preprocessing**: MediaPipe for pose detection  
-- **Evaluation**: Accuracy metrics, saliency maps, and confusion matrices
+- **Evaluation**: Loss, Accuracy, confusion matrices, Captum's saliency maps, 
 
 ## 📸 Sample Results  
 
