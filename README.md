@@ -43,37 +43,44 @@ The following visualizations illustrate **average movement trajectories** in sig
     <img src="images/mediapipe.png">
 </p>
 
-### **2️⃣ Average Movement Trajectories in Datasets**
+### **2️⃣ Movement Trajectories (GIFs)**
+<p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+    <img src="images/movements-ezgif.com-video-to-gif-converter.gif" width="40%">
+    <img src="images/movements1-ezgif.com-video-to-gif-converter.gif" width="40%">
+</p>
+<p align="center"><b>Figure 1: GIFs showing average movement trajectories for different sign language sequences.</b></p>
+
+### **3️⃣ Average Movement Trajectories in Datasets**
 <p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
     <img src="images/movements_autsl.png" width="45%">
     <img src="images/movements_lsa64.png" width="45%">
 </p>
-<p align="center"><b>Figure 1: Average movement trajectories in the AUTSL subset and LSA-64 dataset.</b></p>
+<p align="center"><b>Figure 2: Average movement trajectories in the AUTSL subset and LSA-64 dataset.</b></p>
 
 ---
 
 ## 📸 Experimental Results  
 
-### **3️⃣ Performance vs Hyperparameters**
+### **4️⃣ Performance vs Hyperparameters**
 <p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
     <img src="images/performancevslayers.png" width="30%">
     <img src="images/performancevsnumheads.png" width="30%">
     <img src="images/performancevsdff.png" width="30%">
 </p>
-<p align="center"><b>Figure 2: Performance vs Number of Layers, Number of Attention-Heads, and DFF.</b></p>
+<p align="center"><b>Figure 3: Performance vs Number of Layers, Number of Attention-Heads, and DFF.</b></p>
 
-### **4️⃣ Average Saliency Maps**
+### **5️⃣ Average Saliency Maps**
 <p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
     <img src="images/saliencyautsl.png" width="45%">
     <img src="images/saliencylsa64.png" width="45%">
 </p>
-<p align="center"><b>Figure 3: Average saliency maps for the AUTSL subset and LSA-64 dataset.</b></p>
+<p align="center"><b>Figure 4: Average saliency maps for the AUTSL subset and LSA-64 dataset.</b></p>
 
-### **5️⃣ Model Architecture**
+### **6️⃣ Model Architecture**
 <p align="center">
     <img src="images/transformerarchitecture.png" width="60%">
 </p>
-<p align="center"><b>Figure 4: Transformer-based model architecture for sign language classification.</b></p>
+<p align="center"><b>Figure 5: Transformer-based model architecture for sign language classification.</b></p>
 
 ---
 
