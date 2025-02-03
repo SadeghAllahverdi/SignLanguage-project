@@ -36,19 +36,17 @@ This project uses publicly available sign language datasets:
 ## 📸 Sample Results  
 
 ### **1️⃣ Average Movement Trajectories (AUTSL Subset)**  
-![Average Movements in AUTSL](images/movements_autsl.png)  
-
-### **2️⃣ Average Movement Trajectories (LSA-64 Dataset)**  
-![Average Movements in LSA-64](images/movements_lsa64.png)  
-
-### **3️⃣ Performance vs Hyperparameters**  
+<p align="center">
+  <img src="images/movements_autsl.png" width="50%">
+  <img src="images/movements_lsa64.png" width="50%">
+</p> 
+### **2️⃣ Performance vs Hyperparameters**  
 <p align="center">
   <img src="images/performancevslayers.png" width="30%">
   <img src="images/performancevsnumheads.png" width="30%">
   <img src="images/performancevsdff.png" width="30%">
 </p>
-
-### **4️⃣ Model Architecture**  
+### **3️⃣ Model Architecture**  
 ![Model Architecture](images/model_architecture.png) 
 
  
