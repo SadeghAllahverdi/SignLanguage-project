@@ -50,8 +50,8 @@ This project uses publicly available sign language datasets:
 
 ### **2️⃣ Average Saliency Maps**  
 <p align="center">
-  <img src="images/Saliencyautsl.png" width="40%">
-  <img src="images/Saliencyautsl.png" width="40%">
+  <img src="images/saliencyautsl.png" width="40%">
+  <img src="images/saliencylsa64.png" width="40%">
 </p>
 
 ### **3️⃣ Model Architecture**  
