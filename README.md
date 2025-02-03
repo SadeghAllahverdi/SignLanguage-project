@@ -31,10 +31,10 @@ This project uses publicly available sign language datasets:
 ## 🚀 Technologies Used  
 - **Deep Learning Frameworks**: PyTorch  
 - **Preprocessing**: MediaPipe for pose detection  
-- **Evaluation**: Loss, Accuracy, confusion matrices, Captum's saliency maps, 
+- **Evaluation**: Loss, Accuracy, confusion matrices, Captum's saliency maps,
 
-## 📸 Sample Results  
-
+## 📊 Data Analysis & Preprocessing
+The following visualizations illustrate **average movement trajectories** in sign language datasets and the **MediaPipe-based preprocessing pipeline** used to extract skeletal motion features.
 ### **1️⃣ Average Movement Trajectories**
 <p align="center">
   <figure>
@@ -47,6 +47,9 @@ This project uses publicly available sign language datasets:
   </figure>
 </p>
 
+
+
+## 📸 Sample Results  
 ### **2️⃣ Performance vs Hyperparameters**
 <p align="center">
   <figure>
