@@ -35,10 +35,10 @@ This project uses publicly available sign language datasets:
 
 ## 📸 Sample Results  
 ### **1️⃣ Model Attention via Saliency Maps**  
-![Saliency Map](https://raw.githubusercontent.com/your-username/your-repo/main/results/saliency_map.png)  
+![Saliency Map](movements_autsl.png)  
 
 ### **2️⃣ Average Movement trajectories**  
-![Training Curve](https://raw.githubusercontent.com/your-username/your-repo/main/results/training_curve.png)  
+![Training Curve](movements_lsa64.png)  
 
  
 
