@@ -37,8 +37,8 @@ This project uses publicly available sign language datasets:
 
 ### **1️⃣ Average Movement Trajectories (AUTSL Subset)**  
 <p align="center">
-  <img src="images/movements_autsl.png" width="50%">
-  <img src="images/movements_lsa64.png" width="50%">
+  <img src="images/movements_autsl.png" width="45%">
+  <img src="images/movements_lsa64.png" width="45%">
 </p> 
 ### **2️⃣ Performance vs Hyperparameters**  
 <p align="center">
