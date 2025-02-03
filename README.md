@@ -67,14 +67,16 @@ The following visualizations illustrate **average movement trajectories** in sig
 
 ## 📸 Sample Results  
 ### **2️⃣ Performance vs Hyperparameters**
-<p align="center">
-  <figure>
+## 📊 Performance vs Hyperparameters
+
+<p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
     <img src="images/performancevslayers.png" width="30%">
     <img src="images/performancevsnumheads.png" width="30%">
     <img src="images/performancevsdff.png" width="30%">
-    <figcaption>Figure 3: Performance vs Number of Layers, Number of Attention-Heads and DFF.</figcaption>
-  </figure>
 </p>
+
+<p align="center"><b>Figure 3: Performance vs Number of Layers, Number of Attention-Heads, and DFF.</b></p>
+
 
 ### **3️⃣ Average Saliency Maps**
 <p align="center">
