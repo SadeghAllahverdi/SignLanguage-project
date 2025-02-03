@@ -52,16 +52,12 @@ The following visualizations illustrate **average movement trajectories** in sig
 </p>
 
 ### **1️⃣ Average Movement Trajectories**
-<p align="center">
-  <figure>
-    <img src="images/movements_autsl.png" width="60%">
-    <figcaption>Figure 1: Average movement trajectories in AUTSL subset</figcaption>
-  </figure>
-  <figure>
-    <img src="images/movements_lsa64.png" width="60%">
-    <figcaption>Figure 2: Average movement trajectories in LSA-64 dataset.</figcaption>
-  </figure>
+<p align="center" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+    <img src="images/movements_autsl.png" width="50%">
+    <img src="images/movements_lsa64.png" width="50%">
 </p>
+<p align="center"><b>Figure 3: Average Movement in Autsl Subset and LSA 64 dataset.</b></p>
+
 
 
 
