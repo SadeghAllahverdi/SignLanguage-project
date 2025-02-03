@@ -45,8 +45,8 @@ The following visualizations illustrate **average movement trajectories** in sig
 </p>
 <p align="center">
   <figure>
-    <img src="images//movements-ezgif.com-video-to-gif-converter.gif">
-    <img src="images//movements1-ezgif.com-video-to-gif-converter.gif">
+    <img src="images//movements-ezgif.com-video-to-gif-converter.gif" width= "45%">
+    <img src="images//movements1-ezgif.com-video-to-gif-converter.gif" width= "45%">
     <figcaption>Figure 1: Average movement trajectories in AUTSL subset</figcaption>
   </figure>
 </p>
@@ -69,16 +69,10 @@ The following visualizations illustrate **average movement trajectories** in sig
 ### **2️⃣ Performance vs Hyperparameters**
 <p align="center">
   <figure>
-    <img src="images/performancevslayers.png" width="60%">
-    <figcaption>Figure 3: Performance vs Number of Layers.</figcaption>
-  </figure>
-  <figure>
-    <img src="images/performancevsnumheads.png" width="60%">
-    <figcaption>Figure 4: Performance vs Number of Attention Heads.</figcaption>
-  </figure>
-  <figure>
-    <img src="images/performancevsdff.png" width="60%">
-    <figcaption>Figure 5: Performance vs Feedforward Dimension.</figcaption>
+    <img src="images/performancevslayers.png" width="30%">
+    <img src="images/performancevsnumheads.png" width="30%">
+    <img src="images/performancevsdff.png" width="30%">
+    <figcaption>Figure 3: Performance vs Number of Layers, Number of Attention-Heads and DFF.</figcaption>
   </figure>
 </p>
 
