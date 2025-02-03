@@ -55,7 +55,7 @@ This project uses publicly available sign language datasets:
 </p>
 
 ### **3️⃣ Model Architecture**  
-![Model Architecture](images/model_architecture.png) 
+![Model Architecture](images/transformerarchitecture.png) 
 
  
 
